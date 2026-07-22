@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>AI 매니저 · 통합 클릭 프로토타입</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Jua&family=Gaegu:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --crimson:#E43A56; --crimson-deep:#C6304A; --pink-soft:#FDEEF0;
+    --ink:#232326; --ink-soft:#8B8B92; --bg:#FFFFFF; --line:#EEEEF1; --chip-bg:#F4F4F6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:#0F0F12; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Malgun Gothic",sans-serif;
+    padding:32px 12px;
+  }
+  .phone{
+    width:390px; max-width:100%; height:844px; background:var(--bg); border-radius:44px; border:10px solid #17171B;
+    overflow:hidden; position:relative; box-shadow:0 30px 70px -20px #000000a0; display:flex; flex-direction:column;
+  }
+  .notch{ position:absolute; top:0; left:50%; transform:translateX(-50%); width:120px; height:26px; background:#17171B; border-radius:0 0 16px 16px; z-index:40;}
+  .statusbar{ height:44px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 26px; font-size:13px; font-weight:600; color:var(--ink); background:#fff; z-index:5;}
+
+  #app{ flex:1; overflow-y:auto; scrollbar-width:none; background:#fff; }
+  #app::-webkit-scrollbar{display:none;}
+  .page{ min-height:100%; padding-bottom:20px; }
+
+  /* 공통 상단 검색바 (오늘/성장/포폴/전체) */
+  .topsearch{ display:flex; align-items:center; gap:10px; padding:12px 18px 4px; }
+  .searchbar{ flex:1; background:var(--chip-bg); border-radius:22px; padding:11px 16px; font-size:13px; color:var(--ink); font-weight:600; border:0; outline:none; font-family:inherit; }
+  .searchbar::placeholder{ color:var(--ink-soft); font-weight:600; }
+  .bell{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; position:relative; flex:none;}
+  .bell .dot{ position:absolute; top:6px; right:6px; width:7px; height:7px; border-radius:50%; background:var(--crimson);}
+
+  /* 로고/AI 마크 공통 */
+  .logo-tri{ color:var(--crimson-deep); font-size:16px; }
+
+  /* 서브페이지 공통 상단바 */
+  .subtop{ display:flex; align-items:center; gap:10px; padding:8px 18px 10px; border-bottom:1px solid var(--line);}
+  .subback{ width:30px; height:30px; border-radius:50%; background:var(--chip-bg); display:flex; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex:none;}
+  .subtitle b{ display:block; font-size:15.5px; font-weight:800; color:var(--ink);}
+  .subtitle span{ font-size:11px; color:var(--ink-soft);}
+
+  .row-btn{ cursor:pointer; }
+  .row-btn:active{ opacity:.7; }
+
+  /* AI 인사이트 카드 - 앱 전역 공통 스타일 */
+  .aiin{ margin:12px 18px 0; background:var(--pink-soft); border-left:4px solid var(--crimson); border-radius:4px 12px 12px 4px; padding:11px 13px; }
+  .aitag{ font-size:10px; font-weight:800; color:var(--crimson-deep); display:block; margin-bottom:4px; }
+  .aiin p{ margin:0; font-size:12px; color:var(--ink); line-height:1.5; }
+
+  /* ===================== 하단 탭바 ===================== */
+  .bottomnav{ flex:none; display:flex; background:#fff; border-top:1px solid var(--line); padding:9px 4px 22px; }
+  .navbtn{ flex:1; border:0; background:transparent; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10.5px; font-weight:700; color:var(--ink-soft); cursor:pointer; }
+  .navbtn .nic{ font-size:19px; }
+  .navbtn.active{ color:var(--crimson); }
+
+  /* ===================== 오늘 탭 ===================== */
+  .brief{ margin:14px 18px 0; }
+  .brief-top{ display:flex; align-items:center; gap:6px; font-size:17px; font-weight:800; color:var(--ink); }
+  .brief-sub{ font-size:11.5px; color:var(--ink-soft); margin:3px 0 0 0; }
+  .brief-card{ margin-top:10px; background:var(--pink-soft); border-radius:14px; padding:12px 14px; font-size:12.5px; color:#7A2F3B; line-height:1.55;}
+
+  .today-list{ margin:16px 18px 0; }
+  .t-row{ display:flex; align-items:flex-start; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line);}
+  .t-row .l b{ font-size:13px; color:var(--ink); font-weight:800; display:block;}
+  .t-row .l span{ font-size:11px; color:var(--ink-soft);}
+  .t-row .r{ font-size:12px; color:var(--crimson); font-weight:700; white-space:nowrap; align-self:center;}
+
+  .tt-title{ display:flex; align-items:center; justify-content:space-between; margin:20px 18px 10px;}
+  .tt-title b{ font-size:15px; color:var(--ink); font-weight:800;}
+  .tt-title span{ font-size:11.5px; color:var(--ink-soft);}
+  .home-tt{ margin:0 18px; }
+  .htt-grid{ display:grid; grid-template-columns:26px repeat(5,1fr); grid-auto-rows:34px; gap:2px;}
+  .htt-head{ font-size:10.5px; text-align:center; color:var(--ink-soft); font-weight:700; padding-bottom:4px;}
+  .htt-hour{ font-size:9px; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-family:"IBM Plex Mono",monospace;}
+  .htt-cell{ border-radius:6px; }
+  .htt-blk{ border-radius:7px; font-size:8.5px; padding:4px; line-height:1.15; font-weight:700; }
+
+  .meal-banner{ margin:14px 18px 0; background:var(--chip-bg); border-radius:14px; padding:11px 13px; display:flex; align-items:center; gap:11px; cursor:pointer; }
+  .meal-banner .mb-ic{ width:38px; height:38px; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:18px; flex:none; }
+  .meal-banner .mb-info b{ display:block; font-size:12.5px; color:var(--ink); }
+  .meal-banner .mb-info span{ font-size:10.5px; color:var(--ink-soft); }
+  .meal-banner .mb-arrow{ margin-left:auto; color:var(--ink-soft); font-size:15px; }
+
+  .home-friends-wrap{ margin:22px 0 0; }
+  .home-friends-wrap .tt-title{ cursor:pointer; }
+  .home-friends{ display:flex; gap:10px; overflow-x:auto; padding:0 18px; scrollbar-width:none; }
+  .home-friends::-webkit-scrollbar{ display:none; }
+  .hf-card{ flex:none; width:96px; background:var(--chip-bg); border-radius:14px; padding:12px 8px; text-align:center; cursor:pointer; }
+  .hf-card .hf-av{ width:38px; height:38px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; margin:0 auto 6px; }
+  .hf-card b{ display:block; font-size:11.5px; color:var(--ink); }
+  .hf-card span{ font-size:10px; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; gap:3px; margin-top:2px;}
+  .hf-card .hfdot{ width:6px; height:6px; border-radius:50%; }
+  .hf-card.ai{ background:var(--pink-soft); }
+  .hf-card.ai .hf-av{ background:#fff; }
+  .hf-card.ai b{ color:var(--crimson-deep); font-size:11px; }
+
+  .upcoming{ margin:20px 18px 0; }
+  .u-row{ display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid var(--line);}
+  .u-date{ width:52px; font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); flex:none;}
+  .u-info b{ display:block; font-size:12.5px; color:var(--ink);}
+  .u-info span{ font-size:10.5px; color:var(--ink-soft);}
+  .u-badge{ margin-left:auto; background:var(--pink-soft); color:var(--crimson); font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:8px;}
+
+  /* ===================== 성장 탭 ===================== */
+  .profile-row{ display:flex; align-items:center; gap:12px; margin:8px 18px 0;}
+  .p-avatar{ width:46px; height:46px; border-radius:50%; background:var(--chip-bg); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); flex:none;}
+  .p-name{ font-size:16px; font-weight:800; color:var(--ink);}
+  .p-dept{ font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+
+  .tag-chips{ display:flex; flex-wrap:wrap; gap:6px; margin:12px 18px 0;}
+  .tagc{ font-size:11px; background:var(--chip-bg); color:var(--ink-soft); padding:5px 9px; border-radius:10px; font-weight:700;}
+  .tagc.more{ color:var(--crimson); background:transparent; }
+
+  .plant-nudge{ margin:14px 18px 0; background:var(--pink-soft); border-radius:14px; padding:11px 13px; display:flex; align-items:center; gap:11px; cursor:pointer; }
+  .plant-nudge .pn-ic{ width:38px; height:38px; border-radius:10px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:18px; flex:none; }
+  .plant-nudge .pn-info b{ display:block; font-size:12.5px; color:#7A2F3B; }
+  .plant-nudge .pn-info span{ font-size:10.5px; color:#9A5D6A; }
+  .plant-nudge .pn-arrow{ margin-left:auto; color:#9A5D6A; font-size:15px; }
+
+  .ai-coach{ margin:14px 18px 0; background:var(--pink-soft); border-radius:14px; padding:13px 14px; }
+  .ac-head{ display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:800; color:var(--crimson-deep); }
+  .ai-coach p{ margin:7px 0 0; font-size:12px; color:#7A2F3B; line-height:1.55; }
+  .ai-coach p b{ color:var(--crimson-deep); }
+
+  .goal-section{ margin:22px 18px 0; }
+  .goal-add{ font-size:11px; font-weight:800; color:var(--crimson); cursor:pointer; }
+  .goal-list{ margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+  .goal-row{ display:flex; align-items:center; gap:11px; background:var(--chip-bg); border-radius:12px; padding:11px 13px; }
+  .g-box{ width:32px; height:26px; border-radius:8px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--ink-soft); flex:none; }
+  .goal-row.done .g-box{ background:var(--crimson); color:#fff; }
+  .g-info b{ font-size:12.5px; color:var(--ink); display:block; }
+  .g-info span{ font-size:11px; color:var(--ink-soft); }
+  .goal-row.done .g-info b{ text-decoration:line-through; color:var(--ink-soft); }
+  .goal-row.new{ animation:essayIn .35s ease; }
+
+  .next-section{ margin:22px 0 4px; }
+  .next-section .cap-head{ margin:0 18px 10px; }
+  .next-scroll{ display:flex; gap:10px; overflow-x:auto; padding:0 18px; scrollbar-width:none; }
+  .next-scroll::-webkit-scrollbar{ display:none; }
+  .next-card{ flex:none; width:132px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px; cursor:pointer; }
+  .next-card .nc-ic{ font-size:18px; }
+  .next-card b{ display:block; font-size:12px; color:var(--ink); margin:7px 0 3px; line-height:1.3; }
+  .next-card span{ font-size:10px; color:var(--ink-soft); line-height:1.3; display:block; }
+  .next-card .nc-save{ margin-top:9px; font-size:10.5px; font-weight:700; color:var(--crimson); }
+  .next-card.saved .nc-save{ color:#3D8A63; }
+  .next-card.saved .nc-save::after{ content:" ✓"; }
+
+  .roadmap{ margin:18px 18px 0;}
+  .roadmap .lbl-row{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft); font-weight:700;}
+  .bar-track{ height:7px; background:var(--chip-bg); border-radius:4px; margin-top:6px; overflow:hidden;}
+  .bar-fill{ height:100%; background:var(--crimson); border-radius:4px; }
+  .steps{ display:flex; justify-content:space-between; margin-top:14px; }
+  .step{ display:flex; flex-direction:column; align-items:center; gap:5px; flex:1; }
+  .step-dot{ width:26px; height:26px; border-radius:50%; background:var(--chip-bg); color:var(--ink-soft); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center;}
+  .step.done .step-dot{ background:var(--crimson); color:#fff; }
+  .step.current .step-dot{ background:#fff; color:var(--crimson); box-shadow:0 0 0 2px var(--crimson);}
+  .step span{ font-size:9px; color:var(--ink-soft); text-align:center; line-height:1.2;}
+
+  .cap-section{ margin:22px 18px 0;}
+  .cap-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .cap-head b{ font-size:14px; color:var(--ink); font-weight:800;}
+  .cap-head span{ font-size:10.5px; font-weight:800; background:var(--pink-soft); color:var(--crimson); padding:3px 8px; border-radius:8px;}
+  .cap-row{ display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .cap-row .cn{ width:60px; font-size:11.5px; color:var(--ink-soft); flex:none;}
+  .cap-track{ flex:1; height:8px; background:var(--chip-bg); border-radius:4px; overflow:hidden;}
+  .cap-fill{ height:100%; background:var(--crimson); }
+  .cap-val{ width:24px; font-size:11px; color:var(--ink-soft); text-align:right; font-family:"IBM Plex Mono",monospace;}
+  .cap-btn{ margin-top:12px; width:100%; border:1px solid var(--line); background:#fff; border-radius:12px; padding:11px; font-size:12.5px; font-weight:700; color:var(--ink); text-align:left; padding-left:14px; cursor:pointer; }
+
+  /* ===================== 채팅 탭 ===================== */
+  .chat-top{ display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--line);}
+  .chat-top b{ font-size:15px; color:var(--ink); }
+  .chat-body{ padding:14px 16px 0; }
+  .ai-bubble{ display:flex; gap:8px; }
+  .ai-avatar{ width:30px; height:30px; border-radius:9px; background:var(--pink-soft); display:flex; align-items:center; justify-content:center; flex:none;}
+  .ai-msg{ background:var(--chip-bg); border-radius:4px 14px 14px 14px; padding:12px 14px; font-size:12.5px; color:var(--ink); line-height:1.55; max-width:280px;}
+  .default-chips{ display:flex; flex-wrap:wrap; gap:7px; margin:10px 0 0 38px; }
+  .dchip{ font-size:11.5px; background:#fff; border:1px solid var(--line); color:var(--ink); padding:7px 11px; border-radius:14px; cursor:pointer; }
+
+  .user-bubble{ display:flex; justify-content:flex-end; margin-top:14px; }
+  .user-msg{ background:var(--crimson); color:#fff; border-radius:14px 4px 14px 14px; padding:11px 14px; font-size:12.5px; line-height:1.5; max-width:240px; }
+  .ai-bubble{ margin-top:14px; }
+  .ai-bubble:first-child{ margin-top:0; }
+  .ai-goto{ margin:8px 0 0 38px; display:inline-block; border:0; background:var(--pink-soft); color:var(--crimson-deep); font-size:11.5px; font-weight:700; padding:7px 12px; border-radius:12px; cursor:pointer; }
+
+  .quick-title{ margin:22px 0 8px 0; font-size:12px; font-weight:800; color:var(--crimson); display:flex; align-items:center; gap:5px;}
+  .quick-scroll{ display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin:0 -16px; padding-left:16px; padding-right:16px; scrollbar-width:none;}
+  .quick-scroll::-webkit-scrollbar{display:none;}
+  .qcard{ flex:none; width:118px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:11px; cursor:pointer;}
+  .qcard .qic{ font-size:20px; }
+  .qcard b{ display:block; font-size:11.5px; color:var(--ink); margin-top:6px; line-height:1.3;}
+  .qcard span{ font-size:10px; color:var(--ink-soft); }
+
+  .chat-input{ margin:20px 16px 0; display:flex; align-items:center; gap:8px; background:var(--chip-bg); border-radius:22px; padding:11px 14px;}
+  .chat-input input{ flex:1; border:0; background:transparent; outline:none; font-size:12.5px; font-family:inherit; }
+  .chat-send{ width:30px; height:30px; border-radius:50%; background:var(--crimson); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; flex:none;}
+
+  /* ===================== 포폴 탭 ===================== */
+  .pf-head{ margin:14px 18px 0; }
+  .pf-head b{ font-size:17px; color:var(--ink); font-weight:800; display:block;}
+  .pf-head p{ font-size:12px; color:var(--ink-soft); margin:5px 0 0; line-height:1.5;}
+  .pf-cta{ margin:14px 18px 0; width:calc(100% - 36px); background:var(--crimson); color:#fff; border:0; border-radius:14px; padding:14px; font-size:14px; font-weight:800; cursor:pointer;}
+  .ai-progress{ display:none; align-items:center; gap:10px; margin:10px 18px 0; background:var(--ink); color:#fff; border-radius:14px; padding:12px 15px; font-size:12px; line-height:1.4; }
+  .ai-progress.show{ display:flex; }
+  .ai-progress .spin{ width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; flex:none; animation:aispin .8s linear infinite; }
+  @keyframes aispin{ to{ transform:rotate(360deg); } }
+  .essay-item.new{ animation:essayIn .35s ease; }
+  @keyframes essayIn{ from{ opacity:0; transform:translateY(-6px);} to{ opacity:1; transform:translateY(0);} }
+
+  .stat-title{ margin:20px 18px 8px; font-size:12px; color:var(--ink-soft); font-weight:700;}
+  .stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 18px;}
+  .stat-box{ background:var(--chip-bg); border-radius:12px; padding:12px 8px; text-align:center;}
+  .stat-box b{ display:block; font-size:19px; color:var(--ink); font-weight:800;}
+  .stat-box span{ font-size:10.5px; color:var(--ink-soft); }
+
+  .principle{ margin:16px 18px 0; background:var(--chip-bg); border-radius:12px; padding:12px 14px; font-size:11.5px; color:var(--ink-soft); line-height:1.5;}
+  .principle b{ color:var(--ink); }
+
+  .essay-list{ margin:18px 18px 0; }
+  .essay-item{ display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line);}
+  .essay-item b{ font-size:13px; color:var(--ink);}
+  .essay-item span{ font-size:11px; color:var(--ink-soft); display:block; margin-top:2px;}
+  .badge-fb{ background:var(--pink-soft); color:var(--crimson); font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:8px;}
+  .badge-dr{ background:var(--chip-bg); color:var(--ink-soft); font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:8px;}
+
+  .guide-cards{ margin:20px 18px 0; display:flex; flex-direction:column; gap:10px;}
+  .gcard{ display:flex; align-items:center; gap:12px; background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px 14px; cursor:pointer;}
+  .gcard .gic{ width:38px; height:38px; border-radius:10px; background:var(--pink-soft); display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;}
+  .gcard b{ font-size:13px; color:var(--ink); display:block;}
+  .gcard span{ font-size:11px; color:var(--ink-soft);}
+
+  /* ===================== 전체 탭 ===================== */
+  .menu-cat{ margin:20px 18px 8px; font-size:12px; font-weight:800; color:var(--ink-soft);}
+  .theme-seg{ display:flex; gap:4px; background:var(--chip-bg); border-radius:12px; padding:3px; }
+  .theme-seg button{ border:0; background:transparent; padding:6px 10px; font-size:11px; font-weight:700; color:var(--ink-soft); border-radius:9px; cursor:pointer; font-family:inherit; }
+  .theme-seg button.active{ background:var(--crimson); color:#fff; }
+
+  .cat-group{ margin-top:6px; }
+  .menu-cat-head{ display:flex; align-items:center; justify-content:space-between; margin:20px 18px 8px; cursor:pointer; }
+  .menu-cat-head b{ font-size:12px; font-weight:800; color:var(--ink-soft); }
+  .menu-cat-head .chev{ font-size:12px; color:var(--ink-soft); transition:transform .15s; }
+  .cat-group.open .chev{ transform:rotate(180deg); }
+  .cat-group .cat-items{ display:none; }
+  .cat-group.open .cat-items{ display:block; }
+  .menu-item{ display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 14px; margin:0 18px 8px; cursor:pointer;}
+  .menu-item b{ font-size:13px; color:var(--ink); font-weight:700;}
+  .menu-item .soon{ font-size:11px; color:var(--ink-soft); background:var(--chip-bg); padding:3px 8px; border-radius:8px;}
+  .menu-item .arrow{ color:var(--ink-soft); font-size:13px; }
+  .menu-item.linked b{ color:var(--crimson); }
+  .counsel-note{ margin:2px 18px 4px; background:var(--pink-soft); color:#7A2F3B; font-size:11px; line-height:1.55; padding:10px 12px; border-radius:12px; }
+
+  /* ==================================================================
+     서브 기능 페이지 스타일 (각 페이지 고유 색감 유지, 클래스로 스코프)
+  ================================================================== */
+
+  /* --- 학식 메뉴 --- */
+  .pg-meal{ --tray:var(--chip-bg); --paper:#FFFFFF; --stamp:var(--crimson); --curry:var(--crimson); --line2:var(--line); }
+  .pg-meal .body{ background:var(--tray); padding-bottom:6px;}
+  .pg-meal .chiprow{ display:flex; gap:8px; overflow-x:auto; padding:14px 18px 4px; scrollbar-width:none;}
+  .pg-meal .chiprow::-webkit-scrollbar{display:none;}
+  .pg-meal .mchip{ flex:none; padding:8px 13px; border-radius:16px; font-size:12.5px; font-weight:700; background:var(--paper); color:#7A7669; box-shadow:inset 0 0 0 1px var(--line2);}
+  .pg-meal .mchip.active{ background:var(--crimson); color:#fff; }
+  .pg-meal .ticket{ margin:16px 18px 0; background:var(--paper); border-radius:16px 16px 0 0; padding:16px; position:relative;}
+  .pg-meal .tick-tag{ position:absolute; top:-10px; left:16px; background:var(--stamp); color:#fff; font-size:10px; font-weight:700; padding:4px 9px; border-radius:6px 6px 0 0;}
+  .pg-meal .dishrow{ display:flex; justify-content:space-between; align-items:flex-start; margin-top:8px;}
+  .pg-meal .dishname{ font-size:20px; font-weight:800; color:var(--ink);}
+  .pg-meal .stamp-badge{ width:48px; height:48px; border-radius:50%; border:2px solid var(--stamp); color:var(--stamp); font-size:9px; font-weight:800; display:flex; align-items:center; justify-content:center; text-align:center; transform:rotate(-10deg);}
+  .pg-meal .perf{ height:14px; margin:12px -16px; border-top:1px dashed var(--line2); border-bottom:1px dashed var(--line2);}
+  .pg-meal .mlist{ list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:5px 9px; font-size:12.5px; color:var(--ink);}
+  .pg-meal .meta{ margin-top:10px; font-family:"IBM Plex Mono",monospace; font-size:11px; color:#8A8676;}
+  .pg-meal .meta b{ color:var(--ink); }
+  .pg-meal .torn{ height:12px; background:linear-gradient(-45deg,transparent 8px,var(--paper) 0) 0 0,linear-gradient(45deg,transparent 8px,var(--paper) 0) 0 0; background-size:16px 16px; background-repeat:repeat-x; margin:0 18px;}
+  .pg-meal .reaction{ margin:16px 18px 0; background:var(--paper); border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;}
+  .pg-meal .segment{ margin:12px 18px 0; display:flex; background:var(--chip-bg); border-radius:14px; padding:4px; }
+  .pg-meal .segment button{ flex:1; border:0; background:transparent; padding:9px 0; font-size:12.5px; font-weight:700; color:var(--ink-soft); border-radius:11px; cursor:pointer; font-family:inherit; }
+  .pg-meal .segment button.active{ background:#fff; color:var(--ink); box-shadow:0 2px 6px #00000018; }
+  .pg-meal .congestion{ margin:12px 18px 0; padding:11px 13px; background:#fff; border-radius:14px; box-shadow:inset 0 0 0 1px var(--line2); }
+  .pg-meal .c-top{ display:flex; align-items:center; justify-content:space-between; }
+  .pg-meal .c-label{ display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--ink); }
+  .pg-meal .cdot{ width:8px; height:8px; border-radius:50%; background:var(--crimson); }
+  .pg-meal .c-wait{ font-size:11px; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace; }
+  .pg-meal .bars{ display:flex; align-items:flex-end; gap:3px; height:30px; margin-top:9px; }
+  .pg-meal .bars span{ flex:1; background:var(--chip-bg); border-radius:2px 2px 0 0; }
+  .pg-meal .bars span.now{ background:var(--crimson); }
+  .pg-meal .minisec{ margin:18px 18px 0; }
+  .pg-meal .minisec-title{ font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:8px; }
+  .pg-meal .minicard{ background:#fff; border-radius:12px; padding:11px 13px; display:flex; align-items:center; justify-content:space-between; box-shadow:inset 0 0 0 1px var(--line2); margin-bottom:8px; cursor:pointer; }
+  .pg-meal .minicard b{ font-size:12.5px; color:var(--ink); display:block; }
+  .pg-meal .minicard span{ font-size:11px; color:var(--ink-soft); }
+  .pg-meal .minibadge{ font-family:"IBM Plex Mono",monospace; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+  .pg-meal .minibadge.easy{ background:#E4F3EC; color:#3D8A63; }
+  .pg-meal .minibadge.busy{ background:var(--pink-soft); color:var(--crimson-deep); }
+  .pg-meal .faces button{ width:34px; height:34px; border-radius:50%; border:0; background:var(--tray); font-size:16px; margin-left:5px; cursor:pointer;}
+  .pg-meal .faces button.picked{ background:var(--crimson); color:#fff; }
+
+  /* --- 마음정원 --- */
+  .pg-plant{ --deep:#FFFFFF; --card2:var(--chip-bg); --glow:var(--pink-soft); --leaf:#7FAE72; --water:var(--crimson); --sun:#E8A94C; --bond:var(--crimson); }
+  .pg-plant .body{ background:var(--deep); padding-bottom:14px; }
+  .pg-plant .subtop{ background:#fff; border-bottom:1px solid var(--line); }
+  .pg-plant .subtop .subtitle b{ color:var(--ink);} .pg-plant .subtop .subtitle span{ color:var(--ink-soft); }
+  .pg-plant .subback{ background:var(--chip-bg); color:var(--ink);}
+  .pg-plant .stage{ margin:10px 18px 0; border-radius:22px; background:radial-gradient(circle at 50% 25%,var(--pink-soft) 0%,var(--card2) 65%); min-height:210px; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding:18px 0 14px; position:relative; overflow:hidden;}
+  .pg-plant .badge2{ background:var(--pink-soft); color:var(--crimson-deep); font-size:11px; font-weight:800; padding:5px 11px; border-radius:12px; margin-bottom:8px;}
+  .pg-plant .speech{ margin-top:8px; max-width:240px; background:#fff; box-shadow:0 0 0 1px var(--line); color:var(--ink); padding:10px 14px; border-radius:14px; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif; font-size:13.5px; font-weight:600; line-height:1.45; text-align:center;}
+  .pg-plant .stats2{ margin:14px 18px 0; display:flex; flex-direction:column; gap:8px;}
+  .pg-plant .srow{ display:flex; align-items:center; gap:9px;}
+  .pg-plant .strack{ flex:1; height:8px; border-radius:4px; background:var(--card2); overflow:hidden;}
+  .pg-plant .sval{ font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--ink-soft); width:32px; text-align:right;}
+  .pg-plant .acts{ display:flex; gap:7px; margin:14px 18px 0;}
+  .pg-plant .acts button{ flex:1; border:1px solid var(--line); border-radius:14px; padding:10px 3px; background:#fff; color:var(--ink); font-size:11px; font-weight:700; cursor:pointer;}
+  .pg-plant .diarybox{ margin:16px 18px 0; background:var(--pink-soft); border-radius:14px; padding:12px 14px;}
+  .pg-plant .diarybox .dt{ font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard",sans-serif; font-size:13px; font-weight:500; color:var(--ink); line-height:1.6;}
+  .pg-plant .diarybox .head{ display:flex; justify-content:space-between; font-size:11px; color:var(--ink-soft); margin-bottom:6px;}
+
+  /* --- 취업 가이드 공통(계약서/면접) --- */
+  .pg-guide{ --navy:var(--crimson); --paper2:#FFFFFF; --hl:#F5D26B; --flag:var(--crimson); --note:#FCE79A; --gold2:var(--crimson); --line3:var(--line);}
+  .pg-guide .body{ background:var(--paper2); padding-bottom:10px; }
+  .pg-guide .subtop{ background:#fff; border-bottom:1px solid var(--line);}
+  .pg-guide .subtop .subtitle b{ color:var(--ink);} .pg-guide .subtop .subtitle span{ color:var(--ink-soft);}
+  .pg-guide .subback{ background:var(--chip-bg); color:var(--ink);}
+  .pg-guide .cta2{ margin:14px 18px 0; width:calc(100% - 36px); background:var(--crimson); border:0; border-radius:14px; padding:13px; font-size:13px; font-weight:800; color:#fff; cursor:pointer;}
+  .pg-guide .intro2{ margin:12px 18px 0; background:var(--pink-soft); color:#7A2F3B; border-radius:14px; padding:12px 14px; font-size:13px; line-height:1.5;}
+  .pg-guide .doc2{ margin:16px 18px 0; background:#FFFDF7; border:1px solid var(--line3); border-radius:14px; padding:14px;}
+  .pg-guide .doctitle{ text-align:center; font-weight:800; font-size:13.5px; border-bottom:1px solid var(--line3); padding-bottom:7px; margin-bottom:8px;}
+  .pg-guide .cl{ margin-bottom:10px; }
+  .pg-guide .cl .cnum{ font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:#8B8776;}
+  .pg-guide .cl p{ margin:3px 0 0; font-size:12.5px; line-height:1.55;}
+  .pg-guide .hl2{ background:linear-gradient(180deg,transparent 60%,var(--hl) 60%); font-weight:700;}
+  .pg-guide .flagchip2{ background:#F3E1DD; color:var(--flag); font-size:10px; font-weight:800; padding:2px 6px; border-radius:7px; margin-left:4px;}
+  .pg-guide .note2{ margin-top:6px; background:var(--note); border-radius:0 8px 8px 8px; padding:7px 9px; font-size:11.5px; color:#5A4B12;}
+  .pg-guide .checklist2{ margin:14px 18px 0; background:#fff; border:1px solid var(--line3); border-radius:14px; padding:4px;}
+  .pg-guide .clitem{ display:flex; align-items:center; gap:9px; padding:10px 12px; border-bottom:1px solid var(--line3); cursor:pointer;}
+  .pg-guide .clitem:last-child{ border-bottom:none;}
+  .pg-guide .cbox{ width:18px; height:18px; border-radius:5px; border:1.5px solid #8B8776; display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff;}
+  .pg-guide .clitem.checked .cbox{ background:#4F7A5B; border-color:#4F7A5B;}
+  .pg-guide .clitem.checked .cbox::after{ content:"✓"; }
+  .pg-guide .clitem span{ font-size:12.5px; color:#211F1B;}
+  .pg-guide .clitem.checked span{ color:#8B8776; text-decoration:line-through;}
+
+  /* --- 면접 가이드 전용 --- */
+  .pg-interview .filterrow{ display:flex; gap:8px; overflow-x:auto; padding:14px 18px 4px; scrollbar-width:none;}
+  .pg-interview .filterrow::-webkit-scrollbar{display:none;}
+  .pg-interview .fchip{ flex:none; padding:8px 12px; border-radius:14px; font-size:12px; font-weight:700; background:#fff; border:1px solid var(--line3); color:#8B8776;}
+  .pg-interview .fchip.active{ background:var(--crimson); color:#fff; border-color:var(--crimson);}
+  .pg-interview .tagrow{ display:flex; gap:10px; overflow-x:auto; padding:12px 18px 4px; scrollbar-width:none;}
+  .pg-interview .tagrow::-webkit-scrollbar{display:none;}
+  .pg-interview .tagc2{ flex:none; width:120px; background:#fff; border:1px solid var(--line3); border-radius:0 12px 12px 12px; padding:10px; position:relative;}
+  .pg-interview .taghole{ position:absolute; top:-8px; left:12px; width:12px; height:12px; border-radius:50%; background:var(--crimson);}
+  .pg-interview .tagc2 svg{ width:100%; height:60px;}
+  .pg-interview .tagc2 b{ font-size:11.5px; display:block; margin:6px 0 2px; color:#211F1B;}
+  .pg-interview .tagc2 span{ font-size:10px; color:#8B8776; line-height:1.3;}
+  .pg-interview .eti{ margin:16px 18px 0;}
+  .pg-interview .etirow{ display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--line3);}
+  .pg-interview .etinum{ width:22px; height:22px; border-radius:50%; background:var(--crimson); color:#fff; font-size:10.5px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none;}
+  .pg-interview .etirow b{ font-size:12.5px; display:block; }
+  .pg-interview .etirow span{ font-size:11px; color:#8B8776;}
+  .pg-interview .pre{ margin:16px 18px 20px; background:var(--pink-soft); border-radius:14px; padding:13px 15px;}
+  .pg-interview .pre b{ font-size:13px; color:#7A2F3B;}
+  .pg-interview .pitem{ display:flex; align-items:center; gap:8px; padding:6px 0; font-size:12px; color:#7A2F3B; border-bottom:1px solid #F1D6DB; cursor:pointer;}
+  .pg-interview .pitem:last-child{ border-bottom:none;}
+  .pg-interview .pbox{ width:16px; height:16px; border-radius:4px; border:1.5px solid var(--crimson);}
+  .pg-interview .pitem.checked .pbox{ background:var(--crimson); border-color:var(--crimson);}
+  .pg-interview .pitem.checked span{ color:#B98A93; text-decoration:line-through;}
+
+  /* --- 나만의 학교 단어장 --- */
+  .pg-dict{ --outer2:var(--chip-bg); --card3:#FFFFFF; --rule:#F1D6DB; --tabm:var(--crimson); --tabp:var(--ink-soft); --tabpg:var(--crimson); --tabc:var(--ink-soft);}
+  .pg-dict .body{ background:var(--outer2); padding-bottom:10px;}
+  .pg-dict .demo2{ margin:14px 18px 0; background:var(--pink-soft); border-radius:14px; padding:11px 13px;}
+  .pg-dict .demo2 .lbl2{ font-family:"IBM Plex Mono",monospace; font-size:10px; color:#7A776C; display:block; margin-bottom:5px;}
+  .pg-dict .demo2 .dl{ font-size:12px; margin:3px 0;}
+  .pg-dict .demo2 .before2{ color:#A6A196; text-decoration:line-through;}
+  .pg-dict .demo2 .after2{ color:#2B2A26; font-weight:700;}
+  .pg-dict .catrow{ display:flex; gap:8px; overflow-x:auto; padding:14px 18px 4px; scrollbar-width:none;}
+  .pg-dict .catrow::-webkit-scrollbar{display:none;}
+  .pg-dict .ccip{ flex:none; padding:7px 12px; border-radius:14px; font-size:12px; font-weight:700; background:var(--chip-bg); color:var(--ink-soft);}
+  .pg-dict .ccip.active{ background:var(--crimson); color:#fff;}
+  .pg-dict .idxlist{ padding:12px 18px 0; display:flex; flex-direction:column; gap:9px;}
+  .pg-dict .idxc{ position:relative; background:var(--card3); border:1px solid var(--line); border-radius:4px 12px 12px 12px; padding:11px 13px 11px 15px;}
+  .pg-dict .idxc::before{ content:""; position:absolute; top:0; left:0; width:5px; height:100%; background:var(--crimson);}
+  .pg-dict .idxtop{ display:flex; justify-content:space-between; align-items:center;}
+  .pg-dict .idxterm{ font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:14px; color:var(--ink);}
+  .pg-dict .idxtag{ font-size:9.5px; font-weight:800; padding:2px 6px; border-radius:6px; background:var(--pink-soft); color:var(--crimson-deep);}
+  .pg-dict .toggles2{ display:flex; gap:12px; margin-top:8px;}
+  .pg-dict .tg{ display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-soft);}
+  .pg-dict .sw{ width:28px; height:16px; border-radius:8px; background:#D8D5D0; position:relative;}
+  .pg-dict .sw::after{ content:""; position:absolute; top:2px; left:2px; width:12px; height:12px; border-radius:50%; background:#fff;}
+  .pg-dict .tg.on .sw{ background:var(--crimson);} .pg-dict .tg.on .sw::after{ left:14px;}
+
+  /* --- 상담 --- */
+  .pg-counsel .body{ padding-bottom:14px; }
+  .counsel-intro{ margin:14px 18px 0; font-size:12.5px; color:var(--ink-soft); line-height:1.55; }
+  .counsel-cta{ margin:14px 18px 0; width:calc(100% - 36px); background:var(--crimson); color:#fff; border:0; border-radius:14px; padding:14px; font-size:14px; font-weight:800; cursor:pointer; }
+  .counsel-card{ margin:14px 18px 0; background:var(--chip-bg); border-radius:14px; padding:14px; }
+  .counsel-card b{ font-size:13px; color:var(--ink); }
+  .counsel-card p{ margin:6px 0 0; font-size:11.5px; color:var(--ink-soft); line-height:1.55; }
+  .counsel-hotline{ display:flex; align-items:center; gap:8px; margin-top:9px; font-size:12.5px; color:var(--ink); background:#fff; border-radius:10px; padding:9px 12px; }
+  .counsel-hotline b{ margin-left:auto; color:var(--crimson); font-family:"IBM Plex Mono",monospace; }
+  .cc-head{ display:flex; align-items:center; justify-content:space-between; }
+  .sw3{ width:34px; height:19px; border-radius:10px; background:#D9D5D2; position:relative; cursor:pointer; }
+  .sw3.on{ background:var(--crimson); }
+  .sw3::after{ content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:#fff; transition:.15s; }
+  .sw3.on::after{ left:17px; }
+
+  /* --- 활동 기록 --- */
+  .act-filter{ display:flex; gap:8px; overflow-x:auto; padding:14px 18px 4px; scrollbar-width:none; }
+  .act-filter::-webkit-scrollbar{ display:none; }
+  .af-chip{ flex:none; padding:7px 12px; border-radius:14px; font-size:12px; font-weight:700; background:var(--chip-bg); color:var(--ink-soft); cursor:pointer; }
+  .af-chip.active{ background:var(--crimson); color:#fff; }
+  .act-list{ margin:12px 18px 0; background:#fff; border:1px solid var(--line); border-radius:14px; padding:4px; }
+  .act-row{ display:flex; align-items:center; gap:11px; padding:11px 13px; border-bottom:1px solid var(--line); }
+  .act-row:last-child{ border-bottom:none; }
+  .act-tag{ flex:none; font-size:10px; font-weight:800; padding:4px 8px; border-radius:7px; }
+  .act-tag.academic{ background:#E3EAF0; color:#4C6B8A; }
+  .act-tag.project{ background:#EDE3FB; color:#7B4FC9; }
+  .act-tag.extra{ background:#E4F3EC; color:#3D8A63; }
+  .act-tag.diag{ background:var(--pink-soft); color:var(--crimson-deep); }
+  .act-tag.award{ background:#FDF0DC; color:#B9862E; }
+  .act-info b{ font-size:12.5px; color:var(--ink); display:block; }
+  .act-info span{ font-size:11px; color:var(--ink-soft); }
+
+  /* --- 출결 현황 --- */
+  .pg-attend .body{ padding-bottom:10px; }
+  .attend-summary{ margin:14px 18px 0; background:var(--pink-soft); border-radius:16px; padding:16px; text-align:center; }
+  .as-num{ font-family:"IBM Plex Mono",monospace; font-size:32px; font-weight:700; color:var(--crimson); }
+  .as-num span{ font-size:16px; }
+  .as-lbl{ font-size:11.5px; color:#7A2F3B; margin-top:4px; }
+  .attend-list{ margin:14px 18px 0; background:#fff; border:1px solid var(--line); border-radius:14px; padding:4px; }
+  .attend-row{ display:flex; align-items:center; justify-content:space-between; padding:11px 13px; border-bottom:1px solid var(--line); }
+  .attend-row:last-child{ border-bottom:none; }
+  .ar-info b{ font-size:13px; color:var(--ink); display:block; }
+  .ar-info span{ font-size:11px; color:var(--ink-soft); }
+  .ar-badge{ font-size:10.5px; font-weight:800; padding:4px 9px; border-radius:8px; }
+  .ar-badge.good{ background:#E4F3EC; color:#3D8A63; }
+  .ar-badge.warn{ background:var(--pink-soft); color:var(--crimson-deep); }
+
+  /* --- 알림 --- */
+  .notif-top{ display:flex; align-items:center; justify-content:space-between; padding:16px 18px 12px; border-bottom:1px solid var(--line); }
+  .notif-top b{ font-size:18px; color:var(--ink); font-weight:800; }
+  .notif-close{ width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--ink-soft); cursor:pointer; }
+  .pg-notif .body{ padding-bottom:10px; }
+  .notif-filter{ display:flex; gap:8px; padding:14px 18px 4px; overflow-x:auto; scrollbar-width:none; }
+  .notif-filter::-webkit-scrollbar{ display:none; }
+  .nf-chip{ flex:none; padding:8px 14px; border-radius:16px; font-size:12.5px; font-weight:700; background:var(--chip-bg); color:var(--ink-soft); cursor:pointer; }
+  .nf-chip.active{ background:var(--crimson); color:#fff; }
+  .notif-list{ margin-top:8px; }
+  .notif-item{ display:flex; gap:11px; padding:14px 18px; border-bottom:1px solid var(--line); position:relative; cursor:pointer; }
+  .notif-item.unread{ background:var(--pink-soft); }
+  .ni-ic{ width:30px; height:30px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; background:#fff; color:var(--crimson); box-shadow:0 0 0 1px var(--line); }
+  .ni-ic.ai{ color:var(--crimson); }
+  .ni-ic.sched{ font-size:13px; }
+  .ni-ic.sys{ font-size:13px; }
+  .ni-body b{ display:block; font-size:13px; color:var(--ink); font-weight:800; margin-bottom:3px; }
+  .ni-body span{ display:block; font-size:11.5px; color:var(--ink-soft); line-height:1.55; }
+  .ni-meta{ margin-top:6px; font-size:10.5px; color:#B9AEB1; }
+  .ni-dot{ position:absolute; top:14px; right:18px; width:7px; height:7px; border-radius:50%; background:var(--crimson); }
+  .pg-social{ --bgv:var(--chip-bg); --violet:var(--crimson); --violetsoft:var(--pink-soft); --coral:var(--crimson); --coralsoft:var(--pink-soft); --mint2:#4FA87F; --mintsoft:#E4F3EC; --gold3:var(--crimson); --goldsoft:var(--pink-soft);}
+  .pg-social .body{ background:var(--bgv); padding-bottom:10px;}
+  .pg-social .poke-search{ margin:12px 18px 0; display:flex; align-items:center; gap:8px; background:#fff; border-radius:14px; padding:10px 13px; box-shadow:0 0 0 1px var(--line); }
+  .pg-social .poke-search input{ border:0; outline:none; flex:1; font-size:12.5px; font-family:inherit; color:var(--ink); }
+  .pg-social .aiin{ margin:12px 18px 0; background:var(--violetsoft); border-left:4px solid var(--violet); border-radius:4px 12px 12px 4px; padding:11px 13px;}
+  .pg-social .aitag{ font-size:10px; font-weight:800; color:var(--crimson-deep); display:block; margin-bottom:4px;}
+  .pg-social .aiin p{ margin:0; font-size:12px; color:var(--ink); line-height:1.5;}
+  .pg-social .flist{ padding:12px 18px 0; display:flex; flex-direction:column; gap:8px;}
+  .pg-social .fr{ background:#fff; border-radius:14px; padding:10px 12px; display:flex; align-items:center; gap:10px; box-shadow:0 0 0 1px var(--line); position:relative;}
+  .pg-social .fav{ width:36px; height:36px; border-radius:50%; background:var(--violetsoft); display:flex; align-items:center; justify-content:center; font-size:15px;}
+  .pg-social .fname{ font-size:13px; font-weight:700; color:var(--ink);}
+  .pg-social .fstat{ font-size:10.5px; color:var(--ink-soft); display:flex; align-items:center; gap:4px; margin-top:1px;}
+  .pg-social .sdot2{ width:6px; height:6px; border-radius:50%;}
+  .pg-social .factions{ display:flex; gap:6px; margin-left:auto;}
+  .pg-social .factions button{ width:30px; height:30px; border-radius:50%; border:0; font-size:13px; cursor:pointer;}
+  .pg-social .bpoke{ background:var(--coralsoft); color:var(--coral);}
+  .pg-social .bchat{ background:var(--violetsoft); color:var(--violet);}
+  .pg-social .poke2{ display:none; position:absolute; left:0; right:0; bottom:0; transform:translateY(100%); background:#fff; margin:0 12px; border-radius:12px; padding:10px; box-shadow:0 10px 20px #00000022; z-index:5;}
+  .pg-social .fr.open .poke2{ display:block; }
+  .pg-social .popt{ display:block; width:100%; text-align:left; border:0; background:var(--bgv); border-radius:8px; padding:8px 10px; font-size:11.5px; color:var(--ink); margin-bottom:5px; cursor:pointer;}
+  .pg-social .togrow{ margin:12px 18px 0; display:flex; justify-content:space-between; align-items:center; background:#fff; border-radius:14px; padding:11px 13px; box-shadow:0 0 0 1px var(--line);}
+  .tt-friend-chips{ display:flex; gap:8px; overflow-x:auto; padding:12px 18px 0; scrollbar-width:none; }
+  .tt-friend-chips::-webkit-scrollbar{ display:none; }
+  .ttf-chip{ flex:none; padding:8px 13px; border-radius:16px; font-size:12.5px; font-weight:700; background:#fff; box-shadow:0 0 0 1px var(--line); color:var(--ink-soft); cursor:pointer; }
+  .ttf-chip.active{ background:var(--crimson); color:#fff; box-shadow:none; }
+  .pg-social .sw2{ width:34px; height:19px; border-radius:10px; background:#D9D5D2; position:relative;}
+  .pg-social .sw2.on{ background:var(--mint2);} .pg-social .sw2::after{ content:""; position:absolute; top:2px; left:2px; width:15px; height:15px; border-radius:50%; background:#fff;} .pg-social .sw2.on::after{ left:17px;}
+  .pg-social .ttwrap{ margin:12px 18px 0; background:#fff; border-radius:14px; padding:9px; box-shadow:0 0 0 1px var(--line);}
+  .pg-social .ttg{ display:grid; grid-template-columns:24px repeat(5,1fr); gap:3px;}
+  .pg-social .tth{ font-size:9.5px; text-align:center; color:var(--ink-soft); font-weight:700; padding:3px 0;}
+  .pg-social .ttc{ height:30px; border-radius:5px; background:var(--chip-bg); font-size:8px; }
+  .pg-social .ttclass{ background:#EDE3FB; color:#7B4FC9; display:flex; align-items:center; justify-content:center; text-align:center; padding:2px;}
+  .pg-social .ttfree{ background:var(--mintsoft); box-shadow:inset 0 0 0 1.5px var(--mint2);}
+  .pg-social .gpacard{ margin:12px 18px 0; background:#fff; border-radius:14px; padding:14px; text-align:center; box-shadow:0 0 0 1px var(--line);}
+  .pg-social .gpanum{ font-family:"Jua",sans-serif; font-size:34px; color:var(--gold3);}
+  .pg-social .gpalbl{ font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .pg-social .ctable{ margin:12px 18px 0; background:#fff; border-radius:14px; padding:4px; box-shadow:0 0 0 1px var(--line);}
+  .pg-social .crow{ display:grid; grid-template-columns:1fr 40px 46px; gap:6px; padding:8px 10px; border-bottom:1px solid var(--line); font-size:12px;}
+  .pg-social .crow:last-child{ border-bottom:none;}
+  .pg-social .cgrade{ text-align:center; font-weight:700; background:var(--goldsoft); color:var(--crimson-deep); border-radius:6px;}
+  .pg-social .ccredit{ text-align:center; color:var(--ink-soft);}
+  .poke-toast{ position:absolute; left:14px; right:14px; bottom:92px; background:var(--ink); color:#fff; text-align:center;
+    padding:12px; border-radius:14px; font-size:12.5px; font-weight:700; opacity:0; pointer-events:none;
+    transition:opacity .2s; z-index:60; }
+  .poke-toast.show{ opacity:1; }
+
+  /* ==================================================================
+     다크 모드 (.phone.theme-dark)
+  ================================================================== */
+  .phone.theme-dark{ --bg:#17171C; --chip-bg:#212127; --ink:#EEEEF2; --ink-soft:#9694A0; --line:#2C2C34; --pink-soft:#3A2530; }
+  .phone.theme-dark #app{ background:var(--bg); }
+  .phone.theme-dark .statusbar{ background:var(--bg); color:var(--ink); }
+  .phone.theme-dark .bottomnav{ background:var(--bg); border-top-color:var(--line); }
+  .phone.theme-dark .searchbar{ background:var(--chip-bg); color:var(--ink); }
+  .phone.theme-dark .bell{ color:var(--ink); }
+  .phone.theme-dark .subtop, .phone.theme-dark .chat-top, .phone.theme-dark .notif-top{ background:var(--bg); border-color:var(--line); }
+  .phone.theme-dark .subback, .phone.theme-dark .back{ background:var(--chip-bg); color:var(--ink); }
+  .phone.theme-dark .menu-item, .phone.theme-dark .gcard, .phone.theme-dark .qcard, .phone.theme-dark .dchip,
+  .phone.theme-dark .essay-item, .phone.theme-dark .ticket, .phone.theme-dark .idxc, .phone.theme-dark .fr,
+  .phone.theme-dark .gpacard, .phone.theme-dark .ctable, .phone.theme-dark .notif-item, .phone.theme-dark .cap-btn,
+  .phone.theme-dark .minicard, .phone.theme-dark .congestion, .phone.theme-dark .home-tt, .phone.theme-dark .ttwrap,
+  .phone.theme-dark .togrow, .phone.theme-dark .doc2, .phone.theme-dark .checklist2, .phone.theme-dark .attend-list,
+  .phone.theme-dark .fchip, .phone.theme-dark .tagc2, .phone.theme-dark .meal-banner, .phone.theme-dark .plant-nudge,
+  .phone.theme-dark .ai-avatar, .phone.theme-dark .ai-msg, .phone.theme-dark .hf-card, .phone.theme-dark .sim
+  { background:var(--chip-bg); border-color:var(--line); color:var(--ink); }
+  .phone.theme-dark .idxc::before{ background:var(--crimson); }
+  .phone.theme-dark b, .phone.theme-dark .p-name, .phone.theme-dark .dishname, .phone.theme-dark .idxterm,
+  .phone.theme-dark .fname, .phone.theme-dark .subtitle b, .phone.theme-dark .brief-top
+  { color:#F5F5F7; }
+  .phone.theme-dark .today-list, .phone.theme-dark .essay-list, .phone.theme-dark .t-row, .phone.theme-dark .u-row,
+  .phone.theme-dark .clitem, .phone.theme-dark .crow, .phone.theme-dark .attend-row, .phone.theme-dark .cl,
+  .phone.theme-dark .eti, .phone.theme-dark .etirow
+  { border-color:var(--line); }
+  .phone.theme-dark .stat-box, .phone.theme-dark .principle, .phone.theme-dark .cap-track, .phone.theme-dark .bar-track,
+  .phone.theme-dark .strack, .phone.theme-dark .step-dot, .phone.theme-dark .tagc
+  { background:var(--chip-bg); }
+  .phone.theme-dark .stage{ background:radial-gradient(circle at 50% 25%, #3A2530 0%, var(--chip-bg) 65%); }
+  .phone.theme-dark .doc2, .phone.theme-dark .doc2 p{ background:#232329; color:var(--ink); }
+  .phone.theme-dark .checklist2 .clitem span, .phone.theme-dark .cl p{ color:var(--ink); }
+  .pg-social .sim{ margin:14px 18px 20px; background:#fff; border-radius:14px; padding:14px; box-shadow:0 0 0 1px var(--line);}
+  .pg-social .sim b{ font-size:12.5px; color:var(--ink);}
+  .pg-social .sim-row{ display:flex; align-items:center; gap:10px; margin-top:10px;}
+  .pg-social .sim-row input[type=range]{ flex:1; accent-color:var(--crimson);}
+  .pg-social .sim-val{ font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--crimson); font-weight:700; width:36px; text-align:right;}
+  .pg-social .sim-result{ margin-top:8px; font-size:11.5px; color:var(--ink-soft); line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="statusbar"><span>9:41</span><span>🔋 100%</span></div>
+
+  <div id="app">
+
+    <!-- ============ 오늘 ============ -->
+    <div class="page main-page" id="page-today">
+      <div class="topsearch"><input type="text" class="searchbar" placeholder="＋ 무엇이든 물어보세요" onkeydown="if(event.key==='Enter'){ goToChatWithQuery(this.value); this.value=''; this.blur(); }"><div class="bell row-btn" onclick="showSub('page-notif')">🔔<span class="dot"></span></div></div>
+      <div class="brief">
+        <div class="brief-top"><span class="logo-tri">▲</span>김한별님, 오늘 할 일 4개</div>
+        <div class="brief-sub">7월 17일 금요일 · AI 매니저 아침 브리핑 +</div>
+        <div class="brief-card">오늘은 수업 2개와 마감 임박 학사 일정이 있어요. 수강 바구니 마감이 3일 남았으니, 잊기 전에 오늘 담아두면 좋을 것 같아요.</div>
+      </div>
+
+      <div class="today-list">
+        <div class="t-row"><div class="l"><b>10:00</b><span>실용영어 수업</span></div></div>
+        <div class="t-row"><div class="l"><b>13:00</b><span>AI 리터러시 실습</span></div></div>
+        <div class="t-row"><div class="l"><b>오늘 중</b><span>수강 바구니 담기 (마감 D-3)</span></div><div class="r">바구니 담기 ›</div></div>
+        <div class="t-row"><div class="l"><b>오늘 중</b><span>진로 상담 사전 설문 작성</span></div><div class="r">설문 작성 ›</div></div>
+      </div>
+
+      <div class="meal-banner row-btn" onclick="showSub('page-meal')">
+        <div class="mb-ic">🍚</div>
+        <div class="mb-info"><b>오늘의 학생회관식당 중식</b><span>제육볶음 정식 · 4,500원 · 지금 혼잡도 보통</span></div>
+        <div class="mb-arrow">›</div>
+      </div>
+
+      <div class="home-friends-wrap">
+        <div class="tt-title" onclick="showSub('page-poke')"><b>지금 만날 수 있는 친구</b><span>전체보기 ›</span></div>
+        <div class="home-friends">
+          <div class="hf-card ai" onclick="showSub('page-poke')"><div class="hf-av">✨</div><b>AI 추천</b><span>유다은님과<br>공강 겹침</span></div>
+          <div class="hf-card" onclick="showSub('page-poke')"><div class="hf-av">😊</div><b>유다은</b><span><span class="hfdot" style="background:#4FA87F"></span>지금 공강</span></div>
+          <div class="hf-card" onclick="showSub('page-poke')"><div class="hf-av">😎</div><b>김기민</b><span><span class="hfdot" style="background:#4FA87F"></span>지금 공강</span></div>
+          <div class="hf-card" onclick="showSub('page-poke')"><div class="hf-av">🙂</div><b>구동현</b><span><span class="hfdot" style="background:#C7C3D8"></span>수업 중</span></div>
+        </div>
+      </div>
+
+      <div class="tt-title"><b>내 시간표</b><span>2026-2학기</span></div>
+      <div class="home-tt">
+        <div class="htt-grid">
+          <div></div><div class="htt-head">월</div><div class="htt-head">화</div><div class="htt-head">수</div><div class="htt-head">목</div><div class="htt-head">금</div>
+
+          <div class="htt-hour" style="grid-row:2;grid-column:1;">9</div>
+          <div class="htt-hour" style="grid-row:3;grid-column:1;">10</div>
+          <div class="htt-hour" style="grid-row:4;grid-column:1;">11</div>
+          <div class="htt-hour" style="grid-row:5;grid-column:1;">12</div>
+          <div class="htt-hour" style="grid-row:6;grid-column:1;">13</div>
+          <div class="htt-hour" style="grid-row:7;grid-column:1;">14</div>
+          <div class="htt-hour" style="grid-row:8;grid-column:1;">15</div>
+          <div class="htt-hour" style="grid-row:9;grid-column:1;">16</div>
+
+          <div class="htt-blk" style="grid-column:2;grid-row:2/4;background:#DCE6FB;color:#3E5CB8;">공학수학Ⅱ<br>본관302</div>
+          <div class="htt-blk" style="grid-column:2;grid-row:6;background:#FCE1E6;color:#D0435B;">C프로그래밍<br>공학관401</div>
+          <div class="htt-blk" style="grid-column:2;grid-row:7/9;background:#FCF0D2;color:#B4890F;">전공탐색세미나<br>본관105</div>
+
+          <div class="htt-blk" style="grid-column:3;grid-row:3;background:#DFF3EE;color:#2F8F72;">AI 리터러시<br>AI센201</div>
+          <div class="htt-blk" style="grid-column:3;grid-row:6;background:#FCE7DA;color:#C56A35;">인성과진로설계<br>본관201</div>
+
+          <div class="htt-blk" style="grid-column:4;grid-row:2;background:#EDE3FB;color:#7B4FC9;">C프로그래밍실습<br>공학관402</div>
+          <div class="htt-blk" style="grid-column:4;grid-row:7;background:#DFF3EE;color:#2F8F72;">스마트팩토리개론<br>산학관301</div>
+
+          <div class="htt-blk" style="grid-column:5;grid-row:2/4;background:#DCE6FB;color:#3E5CB8;">공학수학Ⅱ<br>본관302</div>
+          <div class="htt-blk" style="grid-column:5;grid-row:6;background:#FCE1E6;color:#D0435B;">AI 리터러시실습<br>AI센202</div>
+
+          <div class="htt-blk" style="grid-column:6;grid-row:3;background:#DCE6FB;color:#3E5CB8;">실용영어<br>이학관305</div>
+        </div>
+      </div>
+
+      <div class="upcoming">
+        <div class="tt-title" style="margin:4px 0 8px;"><b>다가오는 일정</b><span></span></div>
+        <div class="u-row"><div class="u-date">7/20(월)</div><div class="u-info"><b>수강 바구니 마감</b><span>학사</span></div><div class="u-badge">D-3</div></div>
+        <div class="u-row"><div class="u-date">7/21(화)<br>14:00</div><div class="u-info"><b>진로 상담 — 전공 탐색 리포트 리뷰</b><span>상담</span></div></div>
+        <div class="u-row"><div class="u-date">7/24(금)</div><div class="u-info"><b>AI 역량 진단 (2차)</b><span>진단</span></div></div>
+      </div>
+    </div>
+
+    <!-- ============ 성장 ============ -->
+    <div class="page main-page" id="page-growth" style="display:none">
+      <div class="topsearch"><input type="text" class="searchbar" placeholder="＋ 무엇이든 물어보세요" onkeydown="if(event.key==='Enter'){ goToChatWithQuery(this.value); this.value=''; this.blur(); }"><div class="bell row-btn" onclick="showSub('page-notif')">🔔<span class="dot"></span></div></div>
+
+      <div class="profile-row">
+        <div class="p-avatar">김</div>
+        <div><div class="p-name">김한별</div><div class="p-dept">자유전공학과 · 1학년 2학기</div></div>
+      </div>
+
+      <div class="tag-chips">
+        <div class="tagc">✓ AI 활용 실무</div><div class="tagc">✓ 전공 핵심역량</div>
+        <div class="tagc">✓ 글로벌 인성리더</div><div class="tagc">✓ 성실 출석</div>
+        <div class="tagc">진행 중 2</div><div class="tagc more">전체 보기 ›</div>
+      </div>
+
+      <div class="ai-coach">
+        <div class="ac-head"><span class="logo-tri">▲</span>AI 코치의 한마디</div>
+        <p>지금은 <b>전공 탐색</b> 단계예요. 관심 있는 트랙 2~3개를 좁혀가며 관련 활동을 늘려보는 걸 추천해요. 전공역량이 다른 항목보다 낮은 편이라, 전공 관련 비교과부터 채워보면 좋을 것 같아요.</p>
+      </div>
+
+      <div class="roadmap">
+        <div class="lbl-row"><span>입학</span><span>취업까지 30%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:30%"></div></div>
+        <div class="steps">
+          <div class="step done"><div class="step-dot">✓</div><span>캠퍼스 적응<br>1학년 1학기</span></div>
+          <div class="step current"><div class="step-dot">2</div><span>전공 탐색<br>1학년 2학기</span></div>
+          <div class="step"><div class="step-dot">3</div><span>역량 개발<br>2학년</span></div>
+          <div class="step"><div class="step-dot">4</div><span>취업 준비<br>3학년 1학기</span></div>
+          <div class="step"><div class="step-dot">5</div><span>취업·현장연계<br>3학년 2학기</span></div>
+        </div>
+      </div>
+
+      <div class="cap-section">
+        <div class="cap-head"><b>역량 인증 현황</b><span>통합인증 Lv.2</span></div>
+        <div class="cap-row"><div class="cn">핵심역량</div><div class="cap-track"><div class="cap-fill" style="width:62%"></div></div><div class="cap-val">62</div></div>
+        <div class="cap-row"><div class="cn">교양역량</div><div class="cap-track"><div class="cap-fill" style="width:55%"></div></div><div class="cap-val">55</div></div>
+        <div class="cap-row"><div class="cn">전공역량</div><div class="cap-track"><div class="cap-fill" style="width:48%"></div></div><div class="cap-val">48</div></div>
+        <div class="cap-row"><div class="cn">AI역량</div><div class="cap-track"><div class="cap-fill" style="width:70%"></div></div><div class="cap-val">70</div></div>
+        <div class="cap-row"><div class="cn">인성역량</div><div class="cap-track"><div class="cap-fill" style="width:81%"></div></div><div class="cap-val">81</div></div>
+        <button class="cap-btn row-btn" onclick="showSub('page-activities')">역량 근거 활동 기록 보기 ›</button>
+      </div>
+
+      <div class="goal-section">
+        <div class="cap-head"><b>이번 학기 목표</b><span class="goal-add" onclick="addAiGoal()">✨ AI 목표 추천</span></div>
+        <div class="goal-list" id="goalList">
+          <div class="goal-row done"><div class="g-box">✓</div><div class="g-info"><b>비교과 프로그램 1회 참여</b><span>완료 · IC-PBL 지역문제해결</span></div></div>
+          <div class="goal-row"><div class="g-box">1/2</div><div class="g-info"><b>전공 심화과목 2개 이상 수강</b><span>진행 중 · 공학수학Ⅱ 수강 중</span></div></div>
+          <div class="goal-row"><div class="g-box">-</div><div class="g-info"><b>AI 역량 진단 2차 응시</b><span>7/24 예정</span></div></div>
+        </div>
+      </div>
+
+      <div class="next-section">
+        <div class="cap-head"><b>AI 추천 다음 활동</b><span>전공역량 보완</span></div>
+        <div class="next-scroll">
+          <div class="next-card" onclick="this.classList.toggle('saved')">
+            <div class="nc-ic">📌</div><b>지역문제해결 프로그램</b><span>비교과 · 신청 마감 D-9</span>
+            <div class="nc-save">담아두기</div>
+          </div>
+          <div class="next-card" onclick="showSub('page-gpa')">
+            <div class="nc-ic">📚</div><b>데이터마이닝 강의</b><span>전공 학점 보완에 도움돼요</span>
+            <div class="nc-save">학점 확인</div>
+          </div>
+          <div class="next-card" onclick="this.classList.toggle('saved')">
+            <div class="nc-ic">🧑‍💻</div><b>겨울 인턴십 리스트</b><span>SW·AI 서비스 트랙 관련</span>
+            <div class="nc-save">담아두기</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 채팅 (AI 매니저) ============ -->
+    <div class="page main-page" id="page-chat" style="display:none">
+      <div class="chat-top"><span>‹</span><b>AI 매니저</b><span>☰</span></div>
+      <div class="chat-body">
+        <div id="chatMessages">
+          <div class="ai-bubble">
+            <div class="ai-avatar"><span class="logo-tri">▲</span></div>
+            <div class="ai-msg">안녕하세요 한별님! 전주기 성공 매니저예요. 학업·진로·취업까지 무엇이든 편하게 물어보세요.</div>
+          </div>
+          <div class="default-chips" id="defaultChips">
+            <div class="dchip">내 전공 적합도 보여줘</div>
+            <div class="dchip">이번 학기 뭘 들을까?</div>
+            <div class="dchip">취업까지 로드맵 알려줘</div>
+          </div>
+        </div>
+
+        <div class="quick-title">✨ 지금 이런 것도 도와드려요</div>
+        <div class="quick-scroll">
+          <div class="qcard" onclick="showSub('page-meal')"><div class="qic">🍚</div><b>오늘 학식 메뉴</b><span>중식 추천 보기</span></div>
+          <div class="qcard" onclick="showSub('page-contract')"><div class="qic">📄</div><b>계약서 검토</b><span>근로계약서 AI 체크</span></div>
+          <div class="qcard" onclick="showSub('page-interview')"><div class="qic">👔</div><b>면접 복장 가이드</b><span>기업군별 추천</span></div>
+          <div class="qcard" onclick="showSub('page-plant')"><div class="qic">🌱</div><b>마음정원</b><span>오늘 기분 기록</span></div>
+          <div class="qcard" onclick="showSub('page-dict')"><div class="qic">📇</div><b>학교 단어장</b><span>인식률 높이기</span></div>
+          <div class="qcard" onclick="showSub('page-poke')"><div class="qic">👋</div><b>친구 찌르기</b><span>AI 멘트 추천</span></div>
+          <div class="qcard" onclick="showSub('page-friendtt')"><div class="qic">🗓️</div><b>친구 시간표</b><span>공강 겹치는 시간</span></div>
+          <div class="qcard" onclick="showSub('page-gpa')"><div class="qic">🎓</div><b>학점 계산기</b><span>졸업요건 분석</span></div>
+        </div>
+      </div>
+      <div class="chat-input"><input id="chatInput" placeholder="무엇이든 물어보세요" onkeydown="if(event.key==='Enter'){ sendChatMessage(this.value); this.value=''; }"><div class="chat-send" onclick="sendChatMessage(document.getElementById('chatInput').value); document.getElementById('chatInput').value='';">➤</div></div>
+    </div>
+
+    <!-- ============ 포폴 ============ -->
+    <div class="page main-page" id="page-portfolio" style="display:none">
+      <div class="topsearch"><input type="text" class="searchbar" placeholder="＋ 무엇이든 물어보세요" onkeydown="if(event.key==='Enter'){ goToChatWithQuery(this.value); this.value=''; this.blur(); }"><div class="bell row-btn" onclick="showSub('page-notif')">🔔<span class="dot"></span></div></div>
+
+      <div class="pf-head"><b>자기소개서</b><p>내 활동 데이터를 근거로 직무별 초안을 만들고, 수정과 피드백까지 한곳에서 관리해요.</p></div>
+      <button class="pf-cta" onclick="startAiDraft()">AI 초안 만들기</button>
+      <div class="ai-progress" id="aiProgress"><div class="spin"></div><span id="aiProgressText">내 활동 기록 15건을 근거로 초안을 작성하고 있어요.</span></div>
+
+      <div class="stat-title">AI가 초안을 쓸 때 사용하는 내 활동 기록이에요.</div>
+      <div class="stat-grid">
+        <div class="stat-box"><b>5</b><span>교과</span></div>
+        <div class="stat-box"><b>3</b><span>프로젝트</span></div>
+        <div class="stat-box"><b>1</b><span>자격증</span></div>
+        <div class="stat-box"><b>1</b><span>수상</span></div>
+        <div class="stat-box"><b>2</b><span>역량진단</span></div>
+        <div class="stat-box"><b>3</b><span>비교과</span></div>
+      </div>
+
+      <div class="principle"><b>허위 경험 방지 원칙</b><br>기록으로 검증된 활동만 근거로 사용하고, AI는 없는 경험을 지어내지 않아요. 모든 문장에는 근거 활동이 함께 표시돼요.</div>
+
+      <div class="essay-list" id="essayList">
+        <div class="essay-item"><div><b>스마트팩토리 설비 엔지니어</b><span>v3 · 2시간 전 수정 · 피드백 1</span></div><div class="badge-fb">피드백 도착</div></div>
+        <div class="essay-item"><div><b>AI 서비스 기획</b><span>v1 · 어제 수정</span></div><div class="badge-dr">초안</div></div>
+      </div>
+
+      <div class="stat-title" style="margin-top:22px;">취업 준비 가이드</div>
+      <div class="guide-cards">
+        <div class="gcard" onclick="showSub('page-contract')"><div class="gic">📄</div><div><b>근로계약서 검토 가이드</b><span>졸업예정자 필수 체크 · 연봉협상 멘트</span></div></div>
+        <div class="gcard" onclick="showSub('page-interview')"><div class="gic">👔</div><div><b>면접 복장·에티켓 가이드</b><span>기업군별 복장 + 30분 전 체크리스트</span></div></div>
+      </div>
+    </div>
+
+    <!-- ============ 전체 ============ -->
+    <div class="page main-page" id="page-all" style="display:none">
+      <div class="topsearch"><input type="text" class="searchbar" placeholder="＋ 무엇이든 물어보세요" onkeydown="if(event.key==='Enter'){ goToChatWithQuery(this.value); this.value=''; this.blur(); }"><div class="bell row-btn" onclick="showSub('page-notif')">🔔<span class="dot"></span></div></div>
+      <div class="profile-row"><div class="p-avatar">김</div><div><div class="p-name" style="font-size:14.5px;">안녕하세요, 김한별님</div><div class="p-dept">자유전공학과 · 1학년 2학기</div></div></div>
+
+      <div class="cat-group open">
+        <div class="menu-cat-head" onclick="toggleCat(this)"><b>학사</b><span class="chev">⌄</span></div>
+        <div class="cat-items">
+          <div class="menu-item"><b>수강 계획</b><span class="soon">준비 중</span></div>
+          <div class="menu-item linked row-btn" onclick="showSub('page-attendance')"><b>출결 현황</b><span class="arrow">›</span></div>
+          <div class="menu-item linked row-btn" onclick="showSub('page-gpa')"><b>학점 계산기</b><span class="arrow">›</span></div>
+        </div>
+      </div>
+
+      <div class="cat-group open">
+        <div class="menu-cat-head" onclick="toggleCat(this)"><b>성장·인증</b><span class="chev">⌄</span></div>
+        <div class="cat-items">
+          <div class="menu-item row-btn" onclick="showSub('page-growth-tab')"><b>전주기 로드맵</b><span class="arrow">›</span></div>
+          <div class="menu-item"><b>역량 인증</b><span class="arrow">›</span></div>
+          <div class="menu-item linked row-btn" onclick="showSub('page-activities')"><b>활동 기록</b><span class="arrow">›</span></div>
+          <div class="menu-item"><b>오픈배지 포트폴리오</b><span class="arrow">›</span></div>
+        </div>
+      </div>
+
+      <div class="cat-group open">
+        <div class="menu-cat-head" onclick="toggleCat(this)"><b>진로·취업</b><span class="chev">⌄</span></div>
+        <div class="cat-items">
+          <div class="menu-item linked row-btn" onclick="showSub('page-portfolio-tab')"><b>자기소개서 (e-Portfolio)</b><span class="arrow">›</span></div>
+          <div class="menu-item"><b>채용 연계</b><span class="soon">준비 중</span></div>
+          <div class="menu-item linked row-btn" onclick="showSub('page-contract')"><b>근로계약서 검토 가이드</b><span class="arrow">›</span></div>
+          <div class="menu-item linked row-btn" onclick="showSub('page-interview')"><b>면접 복장·에티켓 가이드</b><span class="arrow">›</span></div>
+        </div>
+      </div>
+
+      <div class="cat-group open">
+        <div class="menu-cat-head" onclick="toggleCat(this)"><b>캠퍼스 라이프</b><span class="chev">⌄</span></div>
+        <div class="cat-items">
+          <div class="menu-item linked row-btn" onclick="showSub('page-meal')"><b>오늘의 학식 메뉴</b><span class="arrow">›</span></div>
+          <div class="menu-item linked row-btn" onclick="showSub('page-dict')"><b>나만의 학교 단어장</b><span class="arrow">›</span></div>
+          <div class="menu-item linked row-btn" onclick="showSub('page-poke')"><b>캠퍼스 소셜 (친구·시간표)</b><span class="arrow">›</span></div>
+        </div>
+      </div>
+
+      <div class="cat-group">
+        <div class="menu-cat-head" onclick="toggleCat(this)"><b>프로그램·혜택</b><span class="chev">⌄</span></div>
+        <div class="cat-items">
+          <div class="menu-item"><b>비교과 프로그램</b><span class="soon">준비 중</span></div>
+          <div class="menu-item"><b>마일리지·장학금</b><span class="soon">준비 중</span></div>
+        </div>
+      </div>
+
+      <div class="cat-group open">
+        <div class="menu-cat-head" onclick="toggleCat(this)"><b>상담</b><span class="chev">⌄</span></div>
+        <div class="cat-items">
+          <div class="menu-item linked row-btn" onclick="showSub('page-counsel')"><b>상담 예약</b><span class="arrow">›</span></div>
+          <div class="menu-item linked row-btn" onclick="showSub('page-plant')"><b>마음정원 (반려식물 케어)</b><span class="arrow">›</span></div>
+          <div class="counsel-note">✨ 마음정원에 남긴 기분 기록은, 동의하시면 상담 예약 시 상담 선생님과 미리 공유돼서 더 편하게 이야기를 시작할 수 있어요.</div>
+        </div>
+      </div>
+
+      <div class="cat-group open">
+        <div class="menu-cat-head" onclick="toggleCat(this)"><b>설정·계정</b><span class="chev">⌄</span></div>
+        <div class="cat-items">
+          <div class="menu-item">
+            <b>화면 테마</b>
+            <div class="theme-seg" id="themeSeg">
+              <button class="active" data-t="light" onclick="setTheme('light')">라이트</button>
+              <button data-t="system" onclick="setTheme('system')">시스템</button>
+              <button data-t="dark" onclick="setTheme('dark')">다크</button>
+            </div>
+          </div>
+          <div class="menu-item"><b>알림 설정</b><span class="soon">준비 중</span></div>
+          <div class="menu-item"><b>언어 설정</b><span class="soon">준비 중</span></div>
+          <div class="menu-item"><b>개인정보 수정</b><span class="soon">준비 중</span></div>
+          <div class="menu-item"><b>로그아웃</b><span class="soon">준비 중</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 학식 메뉴 ============ -->
+    <div class="page sub-page pg-meal" id="page-meal" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>오늘의 학식</b><span id="mealCanteenSub">학생회관식당 · 2026.7.17(금)</span></div></div>
+      <div class="body">
+        <div class="chiprow" id="mealChips">
+          <div class="mchip active" data-c="학생회관식당">학생회관식당</div>
+          <div class="mchip" data-c="기숙사식당">기숙사식당</div>
+          <div class="mchip" data-c="교직원식당">교직원식당</div>
+        </div>
+
+        <div class="segment" id="mealSegment">
+          <button data-m="조식">조식</button>
+          <button class="active" data-m="중식">중식</button>
+          <button data-m="석식">석식</button>
+        </div>
+
+        <div class="congestion">
+          <div class="c-top"><div class="c-label"><span class="cdot"></span>지금 혼잡도 · 보통</div><div class="c-wait">대기 약 5분</div></div>
+          <div class="bars">
+            <span style="height:20%"></span><span style="height:35%"></span><span style="height:70%"></span>
+            <span style="height:95%" class="now"></span><span style="height:80%"></span><span style="height:45%"></span><span style="height:22%"></span>
+          </div>
+        </div>
+
+        <div class="ticket">
+          <div class="tick-tag" id="mealTag">MEAL TICKET · 중식</div>
+          <div style="font-size:11.5px;color:#8A8676;margin-top:4px;" id="mealHallLine">학생회관식당 1층</div>
+          <div class="dishrow">
+            <div class="dishname" id="mealDish">제육볶음 정식</div>
+            <div class="stamp-badge">보통<br>혼잡</div>
+          </div>
+          <div class="perf"></div>
+          <ul class="mlist" id="mealList"><li>· 잡곡밥</li><li>· 미역국</li><li>· 제육볶음</li><li>· 계란말이</li><li>· 배추김치</li></ul>
+          <div class="meta" id="mealMeta"><b>4,500원</b> · <b>645kcal</b></div>
+        </div>
+        <div class="torn"></div>
+        <div class="reaction">
+          <span style="font-size:13px;font-weight:800;color:#211F1B;">오늘 메뉴 어떠셨나요?</span>
+          <div class="faces" id="mealFaces"><button data-v="good">😋</button><button data-v="soso">😐</button><button data-v="bad">😞</button></div>
+        </div>
+
+        <div class="minisec">
+          <div class="minisec-title">다른 식당 메뉴도 보기</div>
+          <div class="minicard" data-c="기숙사식당"><div><b>기숙사식당</b><span>연어덮밥 · 5,000원</span></div><div class="minibadge easy">여유</div></div>
+          <div class="minicard" data-c="교직원식당"><div><b>교직원식당</b><span>순두부찌개 정식 · 6,000원</span></div><div class="minibadge busy">혼잡</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 마음정원 ============ -->
+    <div class="page sub-page pg-plant" id="page-plant" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>마음정원</b><span>나의 반려식물 · 몽글이</span></div></div>
+      <div class="body">
+        <div class="stage">
+          <div class="badge2">잎새 단계 · Lv.3</div>
+          <svg viewBox="0 0 150 150" style="width:130px;height:130px;">
+            <path d="M75 118 C 70 95, 78 75, 75 55" stroke="#4E7A45" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <ellipse cx="55" cy="80" rx="20" ry="11" fill="#7FAE72" transform="rotate(-25 55 80)"/>
+            <ellipse cx="97" cy="88" rx="20" ry="11" fill="#6FA062" transform="rotate(20 97 88)"/>
+            <circle cx="75" cy="48" r="8" fill="#E8B7C4"/>
+            <path d="M40 118 L110 118 L100 148 L50 148 Z" fill="#C97B4F"/>
+            <rect x="36" y="110" width="78" height="12" rx="4" fill="#A85F39"/>
+          </svg>
+          <div class="speech" id="plantSpeech">오늘도 조금 지친 하루였네… 잠깐 숨 돌려볼까?</div>
+        </div>
+        <div class="stats2">
+          <div class="srow">💧<div class="strack"><div style="height:100%;width:62%;background:var(--water);border-radius:4px;" id="wbar"></div></div><div class="sval" id="wval">62%</div></div>
+          <div class="srow">☀️<div class="strack"><div style="height:100%;width:45%;background:var(--sun);border-radius:4px;" id="sbar"></div></div><div class="sval" id="sval2">45%</div></div>
+          <div class="srow">💗<div class="strack"><div style="height:100%;width:80%;background:var(--bond);border-radius:4px;" id="bbar"></div></div><div class="sval" id="bval">80%</div></div>
+        </div>
+        <div class="acts">
+          <button id="pWater">💧 물주기</button><button id="pSun">☀️ 햇빛쐬기</button><button id="pTalk">💬 말걸기</button>
+        </div>
+        <div class="diarybox">
+          <div class="head"><span>오늘의 마음 기록</span><span>7/17</span></div>
+          <div class="dt">"과제가 밀려서 좀 답답했는데, 몽글이한테 물 주고 나니까 마음이 한결 가벼워졌다."</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 상담 ============ -->
+    <div class="page sub-page pg-counsel" id="page-counsel" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>상담</b><span>마음이 힘들 때, 편하게 이야기해요</span></div></div>
+      <div class="body">
+        <div class="counsel-intro">언제든 편하게 이야기하셔도 괜찮아요. 학교 상담센터와 바로 연결해드릴게요.</div>
+
+        <button class="counsel-cta">상담 예약하기</button>
+
+        <div class="counsel-card">
+          <b>혼자 힘들다면</b>
+          <p>지금 많이 급하고 힘드시면, 아래 번호로 24시간 언제든 연락하실 수 있어요.</p>
+          <div class="counsel-hotline"><span>📞</span>자살예방상담전화 <b>1393</b></div>
+          <div class="counsel-hotline"><span>📞</span>정신건강 상담전화 <b>1577-0199</b></div>
+        </div>
+
+        <div class="counsel-card">
+          <div class="cc-head"><b>마음정원 기록 연동</b><div class="sw3 on" id="moodShareSwitch"></div></div>
+          <p>최근 마음정원(🌱)에 남긴 기분 기록을 상담 선생님과 미리 공유해요. 동의하지 않으면 공유되지 않아요.</p>
+        </div>
+
+        <div class="menu-item linked row-btn" onclick="showSub('page-plant')" style="margin:14px 18px 0;"><b>마음정원 가서 기분 기록하기</b><span class="arrow">›</span></div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 근로계약서 검토 가이드 ============ -->
+    <div class="page sub-page pg-guide" id="page-contract" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>근로계약서 검토 가이드</b><span>졸업예정자를 위한 계약 전 필수 체크</span></div></div>
+      <div class="body">
+        <button class="cta2">📎 계약서 사진 올리고 AI 검토받기</button>
+        <div class="intro2">도장 찍기 전 <b>딱 5분</b>만 투자하세요. 흔히 놓치는 조항들을 하이라이트로 짚어드려요.</div>
+        <div class="doc2">
+          <div class="doctitle">근 로 계 약 서 (발췌)</div>
+          <div class="cl"><div class="cnum">제3조 (수습기간)</div><p>수습기간은 3개월로 하며, <span class="hl2">이 기간 중 급여는 본봉의 80%를 지급한다.</span><span class="flagchip2">⚑확인필요</span></p><div class="note2">📌 수습 중 감액은 최대 10%까지만 법적으로 인정돼요.</div></div>
+          <div class="cl"><div class="cnum">제7조 (근무시간)</div><p>09:00~18:00, <span class="hl2">회사의 필요에 따라 연장근무를 실시할 수 있다.</span><span class="flagchip2">⚑확인필요</span></p><div class="note2">📌 연장근로수당 지급 기준이 명시되어 있는지 확인하세요.</div></div>
+        </div>
+        <div class="checklist2" id="cklist">
+          <div class="clitem checked"><div class="cbox"></div><span>수습기간 및 감액 비율</span></div>
+          <div class="clitem"><div class="cbox"></div><span>4대보험 가입 여부</span></div>
+          <div class="clitem"><div class="cbox"></div><span>퇴직금 지급조건</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 면접 복장·에티켓 가이드 ============ -->
+    <div class="page sub-page pg-guide pg-interview" id="page-interview" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>면접 복장·에티켓 가이드</b><span>기업군에 맞는 복장과 태도</span></div></div>
+      <div class="body">
+        <div class="filterrow"><div class="fchip active">전체</div><div class="fchip">공기업·금융</div><div class="fchip">일반기업</div><div class="fchip">스타트업</div></div>
+        <div class="tagrow">
+          <div class="tagc2"><div class="taghole"></div><svg viewBox="0 0 100 90"><rect x="30" y="10" width="40" height="55" rx="4" fill="#1B2A41"/><path d="M40 10 L50 25 L60 10" fill="#F4F1E8"/><rect x="20" y="60" width="60" height="20" rx="3" fill="#101B2B"/></svg><b>다크 슈트</b><span>네이비/차콜, 넥타이 단정</span></div>
+          <div class="tagc2"><div class="taghole"></div><svg viewBox="0 0 100 90"><rect x="28" y="12" width="44" height="52" rx="4" fill="#2A3B52"/><rect x="20" y="60" width="60" height="20" rx="3" fill="#1B2A41"/></svg><b>비즈니스 캐주얼</b><span>블레이저+슬랙스</span></div>
+        </div>
+        <div class="eti">
+          <div class="etirow"><div class="etinum">1</div><div><b>입실 인사</b><span>노크 후 밝은 목소리로 인사</span></div></div>
+          <div class="etirow"><div class="etinum">2</div><div><b>착석 자세</b><span>허리를 곧게, 손은 무릎 위</span></div></div>
+          <div class="etirow"><div class="etinum">3</div><div><b>마무리 인사</b><span>일어나 정중히 인사 후 퇴실</span></div></div>
+        </div>
+        <div class="pre">
+          <b>면접 30분 전 체크</b>
+          <div class="pitem checked"><div class="pbox"></div><span>이력서·자소서 여벌 지참</span></div>
+          <div class="pitem"><div class="pbox"></div><span>휴대폰 무음 확인</span></div>
+          <div class="pitem"><div class="pbox"></div><span>도착 10분 전 대기 완료</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 나만의 학교 단어장 ============ -->
+    <div class="page sub-page pg-dict" id="page-dict" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>나만의 학교 단어장</b><span>강의 인식률 + 자소서 정확도를 함께 높여요</span></div></div>
+      <div class="body">
+        <div class="demo2">
+          <span class="lbl2">적용 예시</span>
+          <div class="dl"><span class="before2">"아이씨피비엘 프로그램"</span> → <span class="after2">"IC-PBL 프로그램"</span></div>
+        </div>
+        <div class="catrow"><div class="ccip active">전체</div><div class="ccip">전공 용어</div><div class="ccip">인물</div><div class="ccip">프로그램</div></div>
+        <div class="idxlist">
+          <div class="idxc major"><div class="idxtop"><span class="idxterm">캡스톤디자인</span><span class="idxtag major">전공 용어</span></div>
+            <div class="toggles2"><div class="tg on">🎙️ 강의인식<span class="sw"></span></div><div class="tg on">✍️ 자소서반영<span class="sw"></span></div></div>
+          </div>
+          <div class="idxc person"><div class="idxtop"><span class="idxterm">박서연 교수님</span><span class="idxtag person">인물</span></div>
+            <div class="toggles2"><div class="tg on">🎙️ 강의인식<span class="sw"></span></div><div class="tg">✍️ 자소서반영<span class="sw"></span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 친구 찌르기 ============ -->
+    <div class="page sub-page pg-social" id="page-poke" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>내 친구</b><span>쪽지 대신 편하게 찌르러 가봐요</span></div></div>
+      <div class="body">
+        <div class="poke-search"><span>🔍</span><input placeholder="이름으로 친구를 검색하세요"></div>
+        <div class="aiin"><span class="aitag">✨ AI 추천</span><p>지금 <b>유다은</b>님과 공강 시간이 겹쳐요. 커피 한 잔 어때요?</p></div>
+        <div class="flist">
+          <div class="fr"><div class="fav">😊</div><div><div class="fname">유다은 ★</div><div class="fstat"><span class="sdot2" style="background:var(--mint2)"></span>지금 공강</div></div>
+            <div class="factions"><button class="bpoke">👋</button><button class="bchat">💬</button></div>
+            <div class="poke2"><span class="aitag">✨ AI 추천 멘트</span>
+              <button class="popt">"우리 지금 둘 다 공강이네! 커피 콜?"</button>
+              <button class="popt">"수업 끝나고 스터디 카페 갈래?"</button>
+              <button class="popt">"콕! 잘 지내지? 오랜만이다 👋"</button>
+            </div>
+          </div>
+          <div class="fr"><div class="fav">🙂</div><div><div class="fname">구동현</div><div class="fstat"><span class="sdot2" style="background:#C7C3D8"></span>수업 중</div></div>
+            <div class="factions"><button class="bpoke">👋</button><button class="bchat">💬</button></div>
+            <div class="poke2"><span class="aitag">✨ AI 추천 멘트</span>
+              <button class="popt">"수업 끝나면 알려줘~ 콕!"</button>
+              <button class="popt">"오늘 저녁에 시간 돼?"</button>
+            </div>
+          </div>
+          <div class="fr"><div class="fav">😎</div><div><div class="fname">김기민</div><div class="fstat"><span class="sdot2" style="background:var(--mint2)"></span>지금 공강</div></div>
+            <div class="factions"><button class="bpoke">👋</button><button class="bchat">💬</button></div>
+            <div class="poke2"><span class="aitag">✨ AI 추천 멘트</span>
+              <button class="popt">"밥 같이 먹으러 갈 사람!"</button>
+              <button class="popt">"과제 진행상황 공유하자"</button>
+            </div>
+          </div>
+          <div class="fr"><div class="fav">🧑</div><div><div class="fname">김민서</div><div class="fstat"><span class="sdot2" style="background:#C7C3D8"></span>수업 중</div></div>
+            <div class="factions"><button class="bpoke">👋</button><button class="bchat">💬</button></div>
+            <div class="poke2"><span class="aitag">✨ AI 추천 멘트</span>
+              <button class="popt">"오랜만! 잘 지내지? 콕 👋"</button>
+            </div>
+          </div>
+        </div>
+        <div class="menu-cat" style="margin:18px 18px 0;">캠퍼스 소셜 더보기</div>
+        <div class="menu-item linked row-btn" onclick="showSub('page-friendtt')"><b>친구 시간표 보기</b><span class="arrow">›</span></div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 친구 시간표 ============ -->
+    <div class="page sub-page pg-social" id="page-friendtt" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b id="ttSubName">유다은님의 시간표</b><span>2026-2학기</span></div></div>
+      <div class="body">
+        <div class="tt-friend-chips" id="ttFriendChips">
+          <div class="ttf-chip active" data-f="유다은">유다은</div>
+          <div class="ttf-chip" data-f="구동현">구동현</div>
+          <div class="ttf-chip" data-f="김기민">김기민</div>
+          <div class="ttf-chip" data-f="김민서">김민서</div>
+        </div>
+        <div class="togrow"><span style="font-size:12px;font-weight:700;">내 시간표와 겹쳐보기</span><div class="sw2 on" id="ttOverlaySwitch"></div></div>
+        <div class="ttwrap">
+          <div class="ttg" id="ttGrid">
+            <div></div><div class="tth">월</div><div class="tth">화</div><div class="tth">수</div><div class="tth">목</div><div class="tth">금</div>
+          </div>
+        </div>
+        <div class="aiin"><span class="aitag">✨ AI 발견</span><p id="ttInsight">화·목 2~3교시가 둘 다 공강이에요. 이 시간에 약속을 잡아볼까요?</p></div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 학점 계산기 ============ -->
+    <div class="page sub-page pg-social" id="page-gpa" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>학점 계산기</b><span>2026-1 기준</span></div></div>
+      <div class="body">
+        <div class="gpacard"><div class="gpanum">3.87</div><div class="gpalbl">현재 전체 평점 (4.5 만점) · 총 이수학점 84</div></div>
+        <div class="ctable">
+          <div class="crow" style="color:#726F87;font-size:10.5px;font-weight:700;"><span>과목명</span><span>학점</span><span>등급</span></div>
+          <div class="crow"><span>데이터베이스</span><span class="ccredit">3</span><span class="cgrade">A+</span></div>
+          <div class="crow"><span>캡스톤디자인</span><span class="ccredit">3</span><span class="cgrade">A0</span></div>
+        </div>
+        <div class="aiin"><span class="aitag">✨ AI 졸업요건 분석</span><p>졸업까지 전공 학점이 <b>6학점</b> 부족해요. 다음 학기 수강신청 전에 미리 담아두는 걸 추천해요.</p></div>
+
+        <div class="sim">
+          <b>✨ 다음 학기 목표 평점 시뮬레이션</b>
+          <div class="sim-row">
+            <input type="range" min="0" max="4.5" step="0.1" value="4.0" id="simRange">
+            <span class="sim-val" id="simVal">4.0</span>
+          </div>
+          <div class="sim-result" id="simResult">이번 학기 18학점을 평균 A0(4.0) 이상 받으면, 전체 평점이 3.87 → <b>3.95</b>로 올라가요.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 활동 기록 ============ -->
+    <div class="page sub-page pg-attend" id="page-activities" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>활동 기록</b><span>역량 인증의 근거가 되는 내 활동 15건</span></div></div>
+      <div class="body">
+        <div class="act-filter" id="actFilter">
+          <div class="af-chip active" data-f="all">전체</div>
+          <div class="af-chip" data-f="교과">교과 5</div>
+          <div class="af-chip" data-f="프로젝트">프로젝트 3</div>
+          <div class="af-chip" data-f="비교과">비교과 3</div>
+          <div class="af-chip" data-f="진단">역량진단 2</div>
+          <div class="af-chip" data-f="수상">수상·자격 2</div>
+        </div>
+        <div class="act-list" id="actList">
+          <div class="act-row" data-f="교과"><div class="act-tag academic">교과</div><div class="act-info"><b>AI 리터러시</b><span>A+ · 2026-1학기</span></div></div>
+          <div class="act-row" data-f="교과"><div class="act-tag academic">교과</div><div class="act-info"><b>공학수학Ⅱ</b><span>A0 · 2026-2학기 수강 중</span></div></div>
+          <div class="act-row" data-f="프로젝트"><div class="act-tag project">프로젝트</div><div class="act-info"><b>스마트팩토리 IoT 모니터링</b><span>캡스톤디자인 팀 프로젝트</span></div></div>
+          <div class="act-row" data-f="프로젝트"><div class="act-tag project">프로젝트</div><div class="act-info"><b>AI 서비스 기획 공모전 출품</b><span>2026.5</span></div></div>
+          <div class="act-row" data-f="비교과"><div class="act-tag extra">비교과</div><div class="act-info"><b>IC-PBL 지역문제해결 프로그램</b><span>2026.6 수료</span></div></div>
+          <div class="act-row" data-f="비교과"><div class="act-tag extra">비교과</div><div class="act-info"><b>코딩동아리 바이트 활동</b><span>2년째 · 해커톤 2회</span></div></div>
+          <div class="act-row" data-f="진단"><div class="act-tag diag">진단</div><div class="act-info"><b>AI 역량 진단 1차</b><span>70점 · 2026.5</span></div></div>
+          <div class="act-row" data-f="진단"><div class="act-tag diag">진단</div><div class="act-info"><b>진로 흥미검사</b><span>SW·AI 서비스 트랙 적합 · 2026.6</span></div></div>
+          <div class="act-row" data-f="수상"><div class="act-tag award">수상</div><div class="act-info"><b>교내 아이디어 공모전 장려상</b><span>2026.4</span></div></div>
+          <div class="act-row" data-f="수상"><div class="act-tag award">자격증</div><div class="act-info"><b>정보처리기능사</b><span>취득 · 2025.12</span></div></div>
+        </div>
+        <div class="aiin" style="margin:16px 18px 20px;"><span class="aitag">✨ AI 안내</span><p>이 활동 기록들이 자기소개서 초안과 역량 인증 점수의 근거로 사용돼요. 사실과 다른 활동은 없는지 한 번씩 확인해주세요.</p></div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 출결 현황 ============ -->
+    <div class="page sub-page pg-attend" id="page-attendance" style="display:none">
+      <div class="subtop"><div class="subback" onclick="goBack()">←</div><div class="subtitle"><b>출결 현황</b><span>2026-2학기 · 강의별 출석 기록</span></div></div>
+      <div class="body">
+        <div class="attend-summary">
+          <div class="as-num">96<span>%</span></div>
+          <div class="as-lbl">전체 출석률 · 결석 1회 · 지각 2회</div>
+        </div>
+
+        <div class="attend-list">
+          <div class="attend-row"><div class="ar-info"><b>공학수학Ⅱ</b><span>출석 12 · 결석 0 · 지각 0</span></div><div class="ar-badge good">양호</div></div>
+          <div class="attend-row"><div class="ar-info"><b>C프로그래밍</b><span>출석 11 · 결석 0 · 지각 1</span></div><div class="ar-badge good">양호</div></div>
+          <div class="attend-row"><div class="ar-info"><b>C프로그래밍실습</b><span>출석 10 · 결석 1 · 지각 0</span></div><div class="ar-badge warn">주의</div></div>
+          <div class="attend-row"><div class="ar-info"><b>AI 리터러시</b><span>출석 12 · 결석 0 · 지각 0</span></div><div class="ar-badge good">양호</div></div>
+          <div class="attend-row"><div class="ar-info"><b>AI 리터러시실습</b><span>출석 11 · 결석 0 · 지각 1</span></div><div class="ar-badge good">양호</div></div>
+          <div class="attend-row"><div class="ar-info"><b>실용영어</b><span>출석 12 · 결석 0 · 지각 0</span></div><div class="ar-badge good">양호</div></div>
+          <div class="attend-row"><div class="ar-info"><b>인성과진로설계</b><span>출석 11 · 결석 0 · 지각 0</span></div><div class="ar-badge good">양호</div></div>
+          <div class="attend-row"><div class="ar-info"><b>전공탐색세미나</b><span>출석 12 · 결석 0 · 지각 0</span></div><div class="ar-badge good">양호</div></div>
+          <div class="attend-row"><div class="ar-info"><b>스마트팩토리개론</b><span>출석 11 · 결석 0 · 지각 0</span></div><div class="ar-badge good">양호</div></div>
+        </div>
+
+        <div class="aiin" style="margin:16px 18px 20px;"><span class="aitag">✨ AI 알림</span><p>C프로그래밍실습 결석이 1회 있어요. 한 번 더 결석하면 출석 기준(2/3)에 걸릴 수 있으니 참고하세요.</p></div>
+      </div>
+    </div>
+
+    <!-- ============ 서브 페이지: 알림 ============ -->
+    <div class="page sub-page pg-notif" id="page-notif" style="display:none">
+      <div class="notif-top">
+        <b>알림</b>
+        <div class="notif-close" onclick="goBack()">×</div>
+      </div>
+      <div class="body">
+        <div class="notif-filter" id="notifFilter">
+          <div class="nf-chip active" data-f="all">전체</div>
+          <div class="nf-chip" data-f="ai">AI 매니저</div>
+          <div class="nf-chip" data-f="sched">일정</div>
+          <div class="nf-chip" data-f="sys">시스템</div>
+        </div>
+
+        <div class="notif-list" id="notifList">
+          <div class="notif-item unread" data-f="ai">
+            <div class="ni-ic ai">＋</div>
+            <div class="ni-body">
+              <b>AI 매니저가 새로운 메시지를 보냈어요</b>
+              <span>한별님, 전공 탐색 리포트로 트랙 적합도를 다시 계산해 봤어요. SW·AI 서비스 트랙이 가장 잘 맞는 편이에요. 어떤지 한번 보고, 괜찮으면 계획에 담아두면 좋아요.</span>
+              <div class="ni-meta">AI 매니저 · 방금 전</div>
+            </div>
+            <div class="ni-dot"></div>
+          </div>
+
+          <div class="notif-item unread" data-f="sched">
+            <div class="ni-ic sched">📅</div>
+            <div class="ni-body">
+              <b>수강 바구니 마감 D-3</b>
+              <span>7/20(월) 23:59까지 담아야 해요.</span>
+              <div class="ni-meta">일정 · 1시간 전</div>
+            </div>
+            <div class="ni-dot"></div>
+          </div>
+
+          <div class="notif-item" data-f="ai">
+            <div class="ni-ic ai">＋</div>
+            <div class="ni-body">
+              <b>AI 매니저가 새로운 메시지를 보냈어요</b>
+              <span>지난주 진로 흥미검사 결과 리포트가 나왔어요. 결과를 반영해서 전공 탐색 로드맵을 업데이트해 뒀어요. 편할 때 어떤 부분부터 같이 볼지 알려주세요.</span>
+              <div class="ni-meta">AI 매니저 · 3시간 전</div>
+            </div>
+          </div>
+
+          <div class="notif-item" data-f="sys">
+            <div class="ni-ic sys">ℹ️</div>
+            <div class="ni-body">
+              <b>오픈배지 인증 기준 업데이트</b>
+              <span>2026-2학기 AI 역량 배지 요건이 일부 변경됐어요.</span>
+              <div class="ni-meta">시스템 · 어제</div>
+            </div>
+          </div>
+
+          <div class="notif-item" data-f="sched">
+            <div class="ni-ic sched">📅</div>
+            <div class="ni-body">
+              <b>내일 진로 상담 예약</b>
+              <span>7/21(화) 14:00, 전공 탐색 리포트 리뷰.</span>
+              <div class="ni-meta">일정 · 어제</div>
+            </div>
+          </div>
+
+          <div class="notif-item" data-f="sys">
+            <div class="ni-ic sys">ℹ️</div>
+            <div class="ni-body">
+              <b>출결 데이터 동기화 완료</b>
+              <span>지난주 비교과 프로그램 출결이 반영됐어요.</span>
+              <div class="ni-meta">시스템 · 2일 전</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottomnav">
+    <button class="navbtn active" data-tab="page-today" onclick="showTab('page-today',this)"><span class="nic">🏠</span>오늘</button>
+    <button class="navbtn" data-tab="page-growth" onclick="showTab('page-growth',this)"><span class="nic">📈</span>성장</button>
+    <button class="navbtn" data-tab="page-chat" onclick="showTab('page-chat',this)"><span class="nic">💬</span>채팅</button>
+    <button class="navbtn" data-tab="page-portfolio" onclick="showTab('page-portfolio',this)"><span class="nic">💼</span>포폴</button>
+    <button class="navbtn" data-tab="page-all" onclick="showTab('page-all',this)"><span class="nic">▦</span>전체</button>
+  </div>
+</div>
+
+<script>
+  let lastMain = 'page-today';
+
+  // 성장 탭: AI 목표 추천
+  const aiGoals = [
+    { title:'AI 리터러시 심화 스터디 참여', desc:'AI 역량 보완 추천' },
+    { title:'교내 공모전 1건 지원', desc:'포트폴리오 근거 활동 확보' },
+    { title:'전공 교수님 진로 상담 1회', desc:'전공 탐색 마무리 단계 추천' }
+  ];
+  let goalIdx = 0;
+  function addAiGoal(){
+    const list = document.getElementById('goalList');
+    const g = aiGoals[goalIdx % aiGoals.length];
+    goalIdx++;
+    const row = document.createElement('div');
+    row.className = 'goal-row new';
+    row.innerHTML = `<div class="g-box">NEW</div><div class="g-info"><b>${g.title}</b><span>${g.desc}</span></div>`;
+    list.appendChild(row);
+  }
+
+  // 캠퍼스 소셜: 친구별 시간표 데이터
+  const friendTT = {
+    "유다은": { sub:"유다은님의 시간표", insight:"화·목 2~3교시가 둘 다 공강이에요. 이 시간에 약속을 잡아볼까요?", rows:[
+      [{t:'class',l:'데이터<br>구조'},{t:'empty'},{t:'class',l:'데이터<br>구조'},{t:'empty'},{t:'empty'}],
+      [{t:'empty'},{t:'free'},{t:'empty'},{t:'free'},{t:'class',l:'캡스톤'}],
+      [{t:'class',l:'영어<br>회화'},{t:'free'},{t:'class',l:'영어<br>회화'},{t:'free'},{t:'class',l:'캡스톤'}]
+    ]},
+    "구동현": { sub:"구동현님의 시간표", insight:"수요일 1~2교시가 둘 다 공강이에요. 점심 약속 잡기 좋은 타이밍이에요.", rows:[
+      [{t:'class',l:'전공<br>세미나'},{t:'class',l:'회계<br>원리'},{t:'free'},{t:'class',l:'회계<br>원리'},{t:'class',l:'전공<br>세미나'}],
+      [{t:'empty'},{t:'class',l:'마케팅'},{t:'free'},{t:'class',l:'마케팅'},{t:'empty'}],
+      [{t:'class',l:'토론과<br>글쓰기'},{t:'empty'},{t:'empty'},{t:'empty'},{t:'class',l:'토론과<br>글쓰기'}]
+    ]},
+    "김기민": { sub:"김기민님의 시간표", insight:"월·수 3교시가 둘 다 공강이에요. 밥 같이 먹자고 해볼까요?", rows:[
+      [{t:'free'},{t:'class',l:'알고리즘'},{t:'free'},{t:'class',l:'알고리즘'},{t:'empty'}],
+      [{t:'class',l:'AI<br>리터러시'},{t:'empty'},{t:'class',l:'AI<br>리터러시'},{t:'empty'},{t:'class',l:'캡스톤'}],
+      [{t:'free'},{t:'class',l:'영어<br>회화'},{t:'free'},{t:'class',l:'영어<br>회화'},{t:'class',l:'캡스톤'}]
+    ]},
+    "김민서": { sub:"김민서님의 시간표", insight:"이번 주는 시간표가 거의 겹치지 않아요. 대신 저녁 시간에 약속을 제안해볼까요?", rows:[
+      [{t:'class',l:'전공<br>기초'},{t:'class',l:'전공<br>기초'},{t:'class',l:'전공<br>기초'},{t:'class',l:'전공<br>기초'},{t:'empty'}],
+      [{t:'class',l:'실험<br>실습'},{t:'class',l:'실험<br>실습'},{t:'empty'},{t:'empty'},{t:'empty'}],
+      [{t:'empty'},{t:'empty'},{t:'class',l:'교양'},{t:'empty'},{t:'empty'}]
+    ]}
+  };
+  let curFriendTT = "유다은";
+
+  function renderFriendTT(){
+    const data = friendTT[curFriendTT];
+    document.getElementById('ttSubName').textContent = data.sub;
+    document.getElementById('ttInsight').textContent = data.insight;
+    const overlayOn = document.getElementById('ttOverlaySwitch').classList.contains('on');
+    const grid = document.getElementById('ttGrid');
+    grid.innerHTML = '<div></div><div class="tth">월</div><div class="tth">화</div><div class="tth">수</div><div class="tth">목</div><div class="tth">금</div>';
+    data.rows.forEach((row, i)=>{
+      grid.innerHTML += `<div class="tth" style="color:#726F87;">${i+1}</div>`;
+      row.forEach(cell=>{
+        if(cell.t === 'class'){ grid.innerHTML += `<div class="ttc ttclass">${cell.l}</div>`; }
+        else if(cell.t === 'free'){ grid.innerHTML += `<div class="ttc ttfree" style="${overlayOn ? '' : 'box-shadow:none;background:var(--chip-bg);'}"></div>`; }
+        else { grid.innerHTML += `<div class="ttc"></div>`; }
+      });
+    });
+  }
+
+  document.getElementById('ttFriendChips')?.addEventListener('click', e=>{
+    const chip = e.target.closest('.ttf-chip');
+    if(!chip) return;
+    document.querySelectorAll('#ttFriendChips .ttf-chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    curFriendTT = chip.dataset.f;
+    renderFriendTT();
+  });
+  document.getElementById('ttOverlaySwitch')?.addEventListener('click', function(){
+    this.classList.toggle('on');
+    renderFriendTT();
+  });
+  renderFriendTT();
+
+  // 화면 테마 전환
+  function setTheme(mode){
+    const phone = document.querySelector('.phone');
+    document.querySelectorAll('#themeSeg button').forEach(b=> b.classList.toggle('active', b.dataset.t===mode));
+    if(mode === 'dark'){
+      phone.classList.add('theme-dark');
+    } else if(mode === 'light'){
+      phone.classList.remove('theme-dark');
+    } else {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      phone.classList.toggle('theme-dark', prefersDark);
+    }
+  }
+
+  // AI 초안 만들기: 진행 배너 → 새 초안 순차 생성
+  let draftCount = 0;
+  function startAiDraft(){
+    const banner = document.getElementById('aiProgress');
+    const txt = document.getElementById('aiProgressText');
+    const steps = [
+      '내 활동 기록 15건을 근거로 초안을 작성하고 있어요.',
+      '직무에 맞는 문장으로 다듬고 있어요.',
+      '초안 작성을 마무리하고 있어요.'
+    ];
+    banner.classList.add('show');
+    let i = 0;
+    txt.textContent = steps[0];
+    const timer = setInterval(()=>{
+      i++;
+      if(i < steps.length){ txt.textContent = steps[i]; }
+    }, 700);
+
+    setTimeout(()=>{
+      clearInterval(timer);
+      banner.classList.remove('show');
+      draftCount++;
+      const item = document.createElement('div');
+      item.className = 'essay-item new';
+      item.innerHTML = `<div><b>새 직무 초안 ${draftCount}</b><span>v1 · 방금 생성</span></div><div class="badge-dr">초안</div>`;
+      const list = document.getElementById('essayList');
+      list.insertBefore(item, list.firstChild);
+    }, steps.length * 700 + 200);
+  }
+
+  // 메인 화면 검색창 → 채팅 탭으로 연결
+  function goToChatWithQuery(text){
+    showTab('page-chat', document.querySelector('.navbtn[data-tab="page-chat"]'));
+    setTimeout(()=> sendChatMessage(text), 50);
+  }
+
+  // 채팅 메시지 전송 + 키워드 기반 AI 응답 라우팅
+  const crisisKeywords = ['우울','불안','죽고싶','죽고 싶','죽음','자살','사라지고 싶','살기 싫'];
+  const chatRoutes = [
+    { keys:['학식','메뉴','밥'], reply:'오늘 학생회관식당 중식은 제육볶음 정식이에요. 지금 혼잡도는 보통이에요.', goto:'page-meal', label:'학식 메뉴 보러가기' },
+    { keys:['계약서','연봉','협상'], reply:'근로계약서에서 놓치기 쉬운 조항들을 하이라이트로 짚어드릴게요.', goto:'page-contract', label:'계약서 검토 가이드 열기' },
+    { keys:['면접','복장','옷차림'], reply:'지원하는 기업군에 맞는 복장과 에티켓 체크리스트를 보여드릴게요.', goto:'page-interview', label:'면접 가이드 열기' },
+    { keys:['마음정원','정원','몽글','기분','스트레스'], reply:'마음정원에서 몽글이랑 오늘 기분을 짧게 기록해볼까요?', goto:'page-plant', label:'마음정원 가기' },
+    { keys:['단어장','인식','발음'], reply:'자주 쓰는 학교 용어를 등록해두면 강의 인식과 자소서 작성 둘 다 정확해져요.', goto:'page-dict', label:'단어장 열기' },
+    { keys:['찌르','친구','콕'], reply:'지금 공강인 친구를 확인하고, 어울리는 멘트로 가볍게 찔러볼 수 있어요.', goto:'page-poke', label:'친구 목록 보기' },
+    { keys:['시간표'], reply:'친구 시간표와 내 시간표가 겹치는 공강 시간을 찾아드릴게요.', goto:'page-friendtt', label:'친구 시간표 보기' },
+    { keys:['학점','평점','졸업요건'], reply:'현재 평점과 졸업 요건 대비 부족한 학점을 계산해드릴게요.', goto:'page-gpa', label:'학점 계산기 열기' },
+    { keys:['전공 적합도','적합도'], reply:'최근 진단 결과를 보면 전공 핵심역량 62점, AI역량 70점으로 준수한 편이에요. 성장 탭에서 자세히 볼 수 있어요.' },
+    { keys:['이번 학기','뭘 들을까','수강'], reply:'전공 탐색 단계라 전공 기초 2과목 + 교양 1과목 조합을 추천해요. 졸업 요건도 함께 확인해볼게요.' },
+    { keys:['로드맵','취업까지'], reply:'현재 2단계 전공 탐색 중이고, 취업까지 30% 진행됐어요. 성장 탭에서 전체 로드맵을 확인할 수 있어요.' }
+  ];
+
+  function sendChatMessage(text){
+    text = (text||'').trim();
+    if(!text) return;
+    const box = document.getElementById('chatMessages');
+
+    const userDiv = document.createElement('div');
+    userDiv.className = 'user-bubble';
+    userDiv.innerHTML = `<div class="user-msg"></div>`;
+    userDiv.querySelector('.user-msg').textContent = text;
+    box.appendChild(userDiv);
+
+    const isCrisis = crisisKeywords.some(k => text.includes(k));
+    const match = chatRoutes.find(r => r.keys.some(k => text.includes(k)));
+    let replyText, gotoPage, gotoLabel;
+
+    if(isCrisis){
+      replyText = '많이 힘드셨겠어요. 혼자 견디지 않으셨으면 해요. 학교 상담센터와 바로 연결해드릴 수 있어요. 지금 너무 급하시면 자살예방상담전화 1393(24시간)으로도 바로 연락하실 수 있어요.';
+      gotoPage = 'page-counsel'; gotoLabel = '상담 예약하러 가기';
+    } else if(match){
+      replyText = match.reply; gotoPage = match.goto; gotoLabel = match.label;
+    } else {
+      replyText = '조금 더 구체적으로 말해주면, 학식·계약서·면접·마음정원·단어장·친구·시간표·학점 중에서 바로 도와드릴 수 있어요.';
+    }
+
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'ai-bubble';
+    aiDiv.innerHTML = `<div class="ai-avatar"><span class="logo-tri">▲</span></div><div class="ai-msg"></div>`;
+    aiDiv.querySelector('.ai-msg').textContent = replyText;
+    box.appendChild(aiDiv);
+
+    if(gotoPage){
+      const btn = document.createElement('button');
+      btn.className = 'ai-goto';
+      btn.textContent = gotoLabel + ' ›';
+      btn.onclick = ()=> showSub(gotoPage);
+      box.appendChild(btn);
+    }
+
+    document.getElementById('app').scrollTop = document.getElementById('app').scrollHeight;
+  }
+
+  document.getElementById('defaultChips')?.addEventListener('click', e=>{
+    const chip = e.target.closest('.dchip');
+    if(chip) sendChatMessage(chip.textContent);
+  });
+
+  // 상담: 마음정원 기록 공유 동의 토글
+  document.getElementById('moodShareSwitch')?.addEventListener('click', function(){
+    this.classList.toggle('on');
+  });
+  document.querySelector('.counsel-cta')?.addEventListener('click', function(){
+    this.textContent = '예약 요청을 보냈어요 ✓';
+  });
+
+  // 활동 기록 필터
+  document.getElementById('actFilter')?.addEventListener('click', e=>{
+    const chip = e.target.closest('.af-chip');
+    if(!chip) return;
+    document.querySelectorAll('#actFilter .af-chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    const f = chip.dataset.f;
+    document.querySelectorAll('#actList .act-row').forEach(row=>{
+      row.style.display = (f==='all' || row.dataset.f===f) ? '' : 'none';
+    });
+  });
+
+  // 알림 필터
+  document.getElementById('notifFilter')?.addEventListener('click', e=>{
+    const chip = e.target.closest('.nf-chip');
+    if(!chip) return;
+    document.querySelectorAll('#notifFilter .nf-chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    const f = chip.dataset.f;
+    document.querySelectorAll('#notifList .notif-item').forEach(item=>{
+      item.style.display = (f==='all' || item.dataset.f===f) ? '' : 'none';
+    });
+  });
+
+  function toggleCat(headEl){
+    headEl.closest('.cat-group').classList.toggle('open');
+  }
+
+  function hideAll(){
+    document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  }
+
+  function showTab(id, btn){
+    hideAll();
+    document.getElementById(id).style.display = 'block';
+    lastMain = id;
+    document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    document.getElementById('app').scrollTop = 0;
+  }
+
+  function goBack(){
+    showTab(lastMain, document.querySelector('.navbtn[data-tab="'+lastMain+'"]'));
+  }
+
+  window.showSub = function(id){
+    if(id === 'page-portfolio-tab'){ showTab('page-portfolio', document.querySelector('.navbtn[data-tab="page-portfolio"]')); return; }
+    if(id === 'page-growth-tab'){ showTab('page-growth', document.querySelector('.navbtn[data-tab="page-growth"]')); return; }
+    hideAll();
+    document.getElementById(id).style.display = 'block';
+    document.getElementById('app').scrollTop = 0;
+  };
+
+  // 학식 데이터 및 인터랙션
+  const mealData = {
+    "학생회관식당": {
+      "조식": { dish:"황태해장국 정식", items:["백미밥","황태해장국","계란찜","숙주나물","깍두기"], price:"3,500원", kcal:"520kcal" },
+      "중식": { dish:"제육볶음 정식", items:["잡곡밥","미역국","제육볶음","계란말이","배추김치"], price:"4,500원", kcal:"645kcal" },
+      "석식": { dish:"돈까스 정식", items:["백미밥","순두부찌개","등심돈까스","양배추샐러드"], price:"5,000원", kcal:"710kcal" }
+    },
+    "기숙사식당": {
+      "조식": { dish:"계란야채죽", items:["계란야채죽","김치","우유"], price:"3,000원", kcal:"410kcal" },
+      "중식": { dish:"연어덮밥", items:["연어덮밥","미소된장국","단무지"], price:"5,000원", kcal:"590kcal" },
+      "석식": { dish:"김치찜 정식", items:["백미밥","김치찜","계란후라이","콩나물무침"], price:"4,800원", kcal:"630kcal" }
+    },
+    "교직원식당": {
+      "조식": { dish:"토스트 세트", items:["토스트","스크램블에그","샐러드","커피"], price:"4,000원", kcal:"460kcal" },
+      "중식": { dish:"순두부찌개 정식", items:["백미밥","순두부찌개","고등어구이","나물무침"], price:"6,000원", kcal:"600kcal" },
+      "석식": { dish:"스테이크 정식", items:["갈릭라이스","스테이크","야채수프","마카로니샐러드"], price:"8,000원", kcal:"820kcal" }
+    }
+  };
+  let mealCanteen = "학생회관식당", mealMealtime = "중식";
+
+  function renderMeal(){
+    const info = mealData[mealCanteen][mealMealtime];
+    document.getElementById('mealCanteenSub').textContent = mealCanteen + " · 2026.7.17(금)";
+    document.getElementById('mealHallLine').textContent = mealCanteen + (mealCanteen==="학생회관식당" ? " 1층" : "");
+    document.getElementById('mealDish').textContent = info.dish;
+    document.getElementById('mealTag').textContent = "MEAL TICKET · " + mealMealtime;
+    document.getElementById('mealList').innerHTML = info.items.map(i=>`<li>· ${i}</li>`).join('');
+    document.getElementById('mealMeta').innerHTML = `<b>${info.price}</b> · <b>${info.kcal}</b>`;
+  }
+  document.getElementById('mealChips')?.addEventListener('click', e=>{
+    const chip = e.target.closest('.mchip');
+    if(!chip) return;
+    document.querySelectorAll('#mealChips .mchip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    mealCanteen = chip.dataset.c;
+    renderMeal();
+  });
+  document.getElementById('mealSegment')?.addEventListener('click', e=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    document.querySelectorAll('#mealSegment button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    mealMealtime = btn.dataset.m;
+    renderMeal();
+  });
+  document.querySelectorAll('.pg-meal .minicard').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      mealCanteen = card.dataset.c;
+      document.querySelectorAll('#mealChips .mchip').forEach(c=>c.classList.toggle('active', c.dataset.c===mealCanteen));
+      renderMeal();
+      document.querySelector('.pg-meal .body').scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+  document.getElementById('mealFaces')?.addEventListener('click', e=>{
+    const btn = e.target.closest('button');
+    if(!btn) return;
+    document.querySelectorAll('#mealFaces button').forEach(b=>b.classList.remove('picked'));
+    btn.classList.add('picked');
+  });
+
+  // 계약서 체크리스트 토글
+  document.getElementById('cklist')?.addEventListener('click', e=>{
+    const item = e.target.closest('.clitem');
+    if(item) item.classList.toggle('checked');
+  });
+
+  // 면접 프리플라이트 체크
+  document.querySelectorAll('.pitem').forEach(item=>{
+    item.addEventListener('click', ()=> item.classList.toggle('checked'));
+  });
+
+  // 면접 필터 칩
+  document.querySelectorAll('.pg-interview .fchip').forEach(chip=>{
+    chip.addEventListener('click', ()=>{
+      document.querySelectorAll('.pg-interview .fchip').forEach(c=>c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+
+  // 단어장 카테고리/토글
+  document.querySelectorAll('.pg-dict .ccip').forEach(c=>{
+    c.addEventListener('click', ()=>{
+      document.querySelectorAll('.pg-dict .ccip').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.pg-dict .tg').forEach(t=>{
+    t.addEventListener('click', ()=> t.classList.toggle('on'));
+  });
+
+  // 마음정원 인터랙션
+  const speeches = ["오늘도 조금 지친 하루였네… 잠깐 숨 돌려볼까?","촉촉해졌어, 고마워 🌱","햇살 좋다~ 기분이 밝아지는 것 같아","요즘 잘 지내고 있어? 나는 네 덕분에 무럭무럭!"];
+  let sIdx = 0;
+  function bump(id, valId, d){
+    const bar = document.getElementById(id), val = document.getElementById(valId);
+    let cur = Math.min(100, parseInt(bar.style.width) + d);
+    bar.style.width = cur+"%"; val.textContent = cur+"%";
+  }
+  document.getElementById('pWater')?.addEventListener('click', ()=>{ bump('wbar','wval',15); document.getElementById('plantSpeech').textContent="촉촉해졌어, 고마워 🌱"; });
+  document.getElementById('pSun')?.addEventListener('click', ()=>{ bump('sbar','sval2',15); document.getElementById('plantSpeech').textContent="햇살 좋다~ 기분이 밝아지는 것 같아"; });
+  document.getElementById('pTalk')?.addEventListener('click', ()=>{ sIdx=(sIdx+1)%speeches.length; document.getElementById('plantSpeech').textContent=speeches[sIdx]; bump('bbar','bval',4); });
+
+  // 찌르기(👋): 추천 멘트 없이 바로 콕 찌르고 토스트 안내
+  document.querySelectorAll('.pg-social .bpoke').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const fr = btn.closest('.fr');
+      document.querySelectorAll('.pg-social .fr.open').forEach(x=> x.classList.remove('open'));
+      const name = fr.querySelector('.fname').textContent.replace('★','').trim();
+      showPokeToast(`${name}님을 콕 찔렀어요 👋`);
+    });
+  });
+  // 메시지(💬): 추천 멘트 시트 오픈 (다른 시트는 닫기)
+  document.querySelectorAll('.pg-social .bchat').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const fr = btn.closest('.fr');
+      const willOpen = !fr.classList.contains('open');
+      document.querySelectorAll('.pg-social .fr.open').forEach(x=> x.classList.remove('open'));
+      if(willOpen) fr.classList.add('open');
+    });
+  });
+  function showPokeToast(text){
+    let toast = document.getElementById('pokeToast');
+    if(!toast){
+      toast = document.createElement('div');
+      toast.id = 'pokeToast';
+      toast.className = 'poke-toast';
+      document.querySelector('.phone').appendChild(toast);
+    }
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(()=> toast.classList.remove('show'), 1600);
+  }
+  document.querySelectorAll('.pg-social .popt').forEach(o=>{
+    o.addEventListener('click', function(){ this.textContent='전송 완료 ✓'; });
+  });
+
+  // 학점 계산기 시뮬레이션 슬라이더
+  const simRange = document.getElementById('simRange');
+  simRange?.addEventListener('input', ()=>{
+    const v = parseFloat(simRange.value).toFixed(1);
+    document.getElementById('simVal').textContent = v;
+    const base = 3.87;
+    const projected = (base + (v - base) * 0.18).toFixed(2);
+    document.getElementById('simResult').innerHTML =
+      `이번 학기 18학점을 평균 ${v} 이상 받으면, 전체 평점이 3.87 → <b>${projected}</b>로 올라가요.`;
+  });
+</script>
+</body>
+</html>
